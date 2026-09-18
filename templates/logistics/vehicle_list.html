@@ -1,0 +1,106 @@
+{% extends 'logistics/base.html' %}
+
+{% block title %}Fleet & Vehicles - Logistics System{% endblock %}
+{% block page_heading %}Fleet & Transport Logistics{% endblock %}
+{% block page_subheading %}Track transportation vehicles, assigned drivers, and on-route carrier status{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: 2.2fr 1fr; gap: 28px;">
+    <!-- Vehicles List -->
+    <div class="glass-card">
+        <div class="card-header">
+            <h3>Registered Fleet ({{ vehicles|length }})</h3>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Vehicle Number</th>
+                        <th>Type & Capacity</th>
+                        <th>Driver Details</th>
+                        <th>Carrier Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for v in vehicles %}
+                    <tr>
+                        <td>
+                            <strong style="font-family: monospace; font-size: 1rem; color: #60a5fa;">{{ v.vehicle_number }}</strong>
+                        </td>
+                        <td>
+                            <strong>{{ v.vehicle_type }}</strong><br>
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">Max: {{ v.capacity_kg }} kg</span>
+                        </td>
+                        <td>
+                            <strong>{{ v.driver_name }}</strong><br>
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">📞 {{ v.driver_phone }}</span>
+                        </td>
+                        <td>
+                            {% if v.status == 'Available' %}
+                                <span class="badge badge-available">In Yard / Ready</span>
+                            {% elif v.status == 'In Transit' %}
+                                <span class="badge badge-in-transit">🚚 On Route</span>
+                            {% else %}
+                                <span class="badge badge-danger">{{ v.status }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; padding: 32px; color: var(--text-muted);">
+                            No vehicles added yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Add Vehicle Form -->
+    <div class="glass-card">
+        <div class="card-header">
+            <h3>Add Vehicle to Fleet</h3>
+        </div>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label class="form-label" for="{{ form.vehicle_number.id_for_label }}">Registration Plate *</label>
+                {{ form.vehicle_number }}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="{{ form.vehicle_type.id_for_label }}">Vehicle Type *</label>
+                {{ form.vehicle_type }}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="{{ form.driver_name.id_for_label }}">Driver Name *</label>
+                {{ form.driver_name }}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="{{ form.driver_phone.id_for_label }}">Driver Contact Phone *</label>
+                {{ form.driver_phone }}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="{{ form.capacity_kg.id_for_label }}">Payload Capacity (Kg) *</label>
+                {{ form.capacity_kg }}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="{{ form.status.id_for_label }}">Status *</label>
+                {{ form.status }}
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+                + Register Vehicle
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logistics Gateway - Select Your Portal | LogiTrack Pro</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: radial-gradient(circle at 50% 10%, #1e293b 0%, #070d18 100%);
+            color: #f8fafc;
+            padding: 24px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Ambient background glow */
+        .ambient-glow-1 {
+            position: absolute;
+            top: -100px;
+            left: 20%;
+            width: 450px;
+            height: 450px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+            pointer-events: none;
+            filter: blur(60px);
+        }
+        .ambient-glow-2 {
+            position: absolute;
+            bottom: -50px;
+            right: 20%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, transparent 70%);
+            pointer-events: none;
+            filter: blur(60px);
+        }
+
+        .gateway-wrapper {
+            max-width: 1100px;
+            margin: auto;
+            width: 100%;
+            position: relative;
+            z-index: 2;
+        }
+
+        .gateway-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .gateway-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.25);
+            padding: 6px 16px;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #93c5fd;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 16px;
+        }
+
+        .gateway-title {
+            font-size: 2.75rem;
+            font-weight: 800;
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #ffffff 30%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 14px;
+        }
+
+        .gateway-subtitle {
+            color: #94a3b8;
+            font-size: 1.1rem;
+            max-width: 620px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .portal-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 32px;
+            margin-bottom: 40px;
+        }
+
+        .portal-card {
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 36px;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        .portal-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7);
+        }
+
+        .portal-card.provider:hover {
+            border-color: rgba(59, 130, 246, 0.4);
+            box-shadow: 0 20px 40px -15px rgba(59, 130, 246, 0.25);
+        }
+
+        .portal-card.consumer:hover {
+            border-color: rgba(16, 185, 129, 0.4);
+            box-shadow: 0 20px 40px -15px rgba(16, 185, 129, 0.25);
+        }
+
+        .portal-card-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+
+        .portal-icon-wrapper {
+            width: 64px;
+            height: 64px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+        }
+
+        .portal-card.provider .portal-icon-wrapper {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.4));
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.25);
+        }
+
+        .portal-card.consumer .portal-icon-wrapper {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.4));
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.25);
+        }
+
+        .role-tag {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .role-tag.provider-tag {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .role-tag.consumer-tag {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .portal-name {
+            font-size: 1.65rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 10px;
+        }
+
+        .portal-desc {
+            color: #94a3b8;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 24px;
+            min-height: 48px;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 32px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            flex-grow: 1;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            color: #cbd5e1;
+        }
+
+        .feature-bullet {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .provider .feature-bullet {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+        }
+
+        .consumer .feature-bullet {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+        }
+
+        .portal-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .portal-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 20px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .btn-provider-main {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: #ffffff;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+        }
+        .btn-provider-main:hover {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            transform: translateY(-1px);
+        }
+
+        .btn-consumer-main {
+            background: linear-gradient(135deg, #059669, #047857);
+            color: #ffffff;
+            box-shadow: 0 4px 14px rgba(5, 150, 105, 0.4);
+        }
+        .btn-consumer-main:hover {
+            background: linear-gradient(135deg, #10b981, #059669);
+            transform: translateY(-1px);
+        }
+
+        .btn-portal-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #cbd5e1;
+        }
+        .btn-portal-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .portal-creds {
+            margin-top: 16px;
+            padding: 10px 14px;
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 8px;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-align: center;
+        }
+
+        .gateway-footer {
+            text-align: center;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            color: #64748b;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .sync-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #34d399;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .sync-pulse {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: pulse-green 2s infinite;
+        }
+
+        @keyframes pulse-green {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+            }
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="ambient-glow-1"></div>
+    <div class="ambient-glow-2"></div>
+
+    <div class="gateway-wrapper">
+        <!-- Gateway Header -->
+        <header class="gateway-header">
+            <div class="gateway-badge">
+                <span>⚡ Real-Time Unified Logistics Platform</span>
+            </div>
+            <h1 class="gateway-title">LogiTrack Pro Gateway</h1>
+            <p class="gateway-subtitle">
+                Access your dedicated portal. Changes made in either portal sync instantaneously through the unified supply chain database.
+            </p>
+        </header>
+
+        {% if messages %}
+        <div style="max-width: 700px; margin: 0 auto 24px;">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }}" style="margin-bottom: 10px;">
+                <span>{{ message }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Dual Portal Cards -->
+        <div class="portal-grid">
+            <!-- 1. Provider Portal -->
+            <div class="portal-card provider">
+                <div class="portal-card-top">
+                    <div class="portal-icon-wrapper">
+                        🚚
+                    </div>
+                    <span class="role-tag provider-tag">Operations & Fleet</span>
+                </div>
+
+                <h2 class="portal-name">Logistics Provider Portal</h2>
+                <p class="portal-desc">
+                    For warehouse managers, dispatch controllers, fleet drivers, and operations executives to control the entire supply chain.
+                </p>
+
+                <ul class="feature-list">
+                    <li class="feature-item">
+                        <div class="feature-bullet">✓</div>
+                        <span>Warehouse inventory tracking & stock levels</span>
+                    </li>
+                    <li class="feature-item">
+                        <div class="feature-bullet">✓</div>
+                        <span>Fleet dispatch, waypoints & checkpoint logging</span>
+                    </li>
+                    <li class="feature-item">
+                        <div class="feature-bullet">✓</div>
+                        <span>Approve client booking requests into active routes</span>
+                    </li>
+                    <li class="feature-item">
+                        <div class="feature-bullet">✓</div>
+                        <span>Generate e-Challans, invoices & CSV reports</span>
+                    </li>
+                </ul>
+
+                <div class="portal-actions">
+                    <a href="{% url 'provider_login' %}" class="portal-btn btn-provider-main" id="btn-provider-login">
+                        <span>Provider Portal Login</span>
+                        <span>→</span>
+                    </a>
+                    <a href="{% url 'provider_register' %}" class="portal-btn btn-portal-secondary" id="btn-provider-register">
+                        <span>Register Carrier / Dealer Account</span>
+                    </a>
+                </div>
+
+                <div class="portal-creds">
+                    🔑 <strong>Default Provider:</strong> <code>provider</code> / <code>provider123</code> &nbsp;|&nbsp; <code>admin</code> / <code>admin123</code>
+                </div>
+            </div>
+
+            <!-- 2. Consumer Portal -->
+            <div class="portal-card consumer">
+                <div class="portal-card-top">
+                    <div class="portal-icon-wrapper">
+                        🏢
+                    </div>
+                    <span class="role-tag consumer-tag">Consignees & Clients</span>
+                </div>
+
+                <h2 class="portal-name">Consumer / Client Portal</h2>
+                <p class="portal-desc">
+                    For client businesses, consignees, and package recipients. Track inbound cargo on interactive live maps and place booking orders.
+                </p>
+
+                <ul class="feature-list">
+                    <li class="feature-item">
+                        <div class="feature-bullet">✓</div>
+                        <span>Live GPS route mapping & estimated arrival countdown</span>
+                    </li>
+                    <li class="feature-item">
+                        <div class="feature-bullet">✓</div>
+                        <span>Submit consignment booking requests directly</span>
+                    </li>
+                    <li class="feature-item">
+                        <div class="feature-bullet">✓</div>
+                        <span>Download digital consignment waybills & invoices</span>
+                    </li>
+                    <li class="feature-item">
+                        <div class="feature-bullet">✓</div>
+                        <span>Direct delivery inquiries & support communications</span>
+                    </li>
+                </ul>
+
+                <div class="portal-actions">
+                    <a href="{% url 'consumer_login' %}" class="portal-btn btn-consumer-main" id="btn-consumer-login">
+                        <span>Consumer Portal Login</span>
+                        <span>→</span>
+                    </a>
+                    <a href="{% url 'consumer_register' %}" class="portal-btn btn-portal-secondary" id="btn-consumer-register">
+                        <span>Create Client Account</span>
+                    </a>
+                </div>
+
+                <div class="portal-creds">
+                    👤 <strong>Default Consumer:</strong> <code>consumer</code> / <code>consumer123</code> &nbsp;|&nbsp; Or register new
+                </div>
+            </div>
+        </div>
+
+        <!-- Gateway Footer & Public Track Quick Link -->
+        <footer class="gateway-footer">
+            <div class="sync-status">
+                <div class="sync-pulse"></div>
+                <span>Synchronized Real-Time PostgreSQL / SQLite Engine</span>
+            </div>
+
+            <div>
+                <a href="{% url 'public_tracking_search' %}" style="color: #60a5fa; text-decoration: none; font-weight: 500;">
+                    🔍 Public Package Tracker (No Login Required) →
+                </a>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>

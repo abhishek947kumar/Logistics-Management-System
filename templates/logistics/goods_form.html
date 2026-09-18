@@ -1,0 +1,94 @@
+{% extends 'logistics/base.html' %}
+
+{% block title %}{{ title }} - Logistics Management System{% endblock %}
+{% block page_heading %}{{ title }}{% endblock %}
+{% block page_subheading %}Maintain accurate records of goods stored and issued across warehouse facilities{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 0 auto;">
+    <div class="glass-card">
+        <div class="card-header">
+            <h3>Goods Information & Warehouse Allocation</h3>
+            <a href="{% url 'goods_list' %}" class="btn btn-secondary btn-sm">← Back to Goods Catalog</a>
+        </div>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-error">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label" for="{{ form.sku.id_for_label }}">SKU / Barcode ID</label>
+                    {{ form.sku }}
+                    <span class="form-help">Leave blank to auto-generate a unique barcode identifier.</span>
+                    {% if form.sku.errors %}<span style="color: #f87171; font-size: 0.75rem;">{{ form.sku.errors }}</span>{% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="{{ form.name.id_for_label }}">Goods / Item Name *</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}<span style="color: #f87171; font-size: 0.75rem;">{{ form.name.errors }}</span>{% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="{{ form.category.id_for_label }}">Industry Category *</label>
+                    {{ form.category }}
+                    {% if form.category.errors %}<span style="color: #f87171; font-size: 0.75rem;">{{ form.category.errors }}</span>{% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="{{ form.warehouse.id_for_label }}">Assigned Warehouse Facility *</label>
+                    {{ form.warehouse }}
+                    {% if form.warehouse.errors %}<span style="color: #f87171; font-size: 0.75rem;">{{ form.warehouse.errors }}</span>{% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="{{ form.quantity.id_for_label }}">Stock Quantity *</label>
+                    {{ form.quantity }}
+                    {% if form.quantity.errors %}<span style="color: #f87171; font-size: 0.75rem;">{{ form.quantity.errors }}</span>{% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="{{ form.unit.id_for_label }}">Packaging Unit *</label>
+                    {{ form.unit }}
+                    {% if form.unit.errors %}<span style="color: #f87171; font-size: 0.75rem;">{{ form.unit.errors }}</span>{% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="{{ form.weight_kg.id_for_label }}">Unit Weight (Kg)</label>
+                    {{ form.weight_kg }}
+                    {% if form.weight_kg.errors %}<span style="color: #f87171; font-size: 0.75rem;">{{ form.weight_kg.errors }}</span>{% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="{{ form.unit_value.id_for_label }}">Declared Unit Value (INR)</label>
+                    {{ form.unit_value }}
+                    {% if form.unit_value.errors %}<span style="color: #f87171; font-size: 0.75rem;">{{ form.unit_value.errors }}</span>{% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="{{ form.status.id_for_label }}">Inventory Status *</label>
+                    {{ form.status }}
+                    {% if form.status.errors %}<span style="color: #f87171; font-size: 0.75rem;">{{ form.status.errors }}</span>{% endif %}
+                </div>
+
+                <div class="form-group full-width">
+                    <label class="form-label" for="{{ form.description.id_for_label }}">Handling Instructions & Remarks</label>
+                    {{ form.description }}
+                    <span class="form-help">E.g., Fragile, Temperature-sensitive (2-8°C), Hazardous, Keep Dry</span>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 14px; margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--bg-card-border);">
+                <a href="{% url 'goods_list' %}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">Save Goods Item</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

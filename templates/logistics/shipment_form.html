@@ -1,0 +1,123 @@
+{% extends 'logistics/base.html' %}
+
+{% block title %}Dispatch Goods - Logistics Management System{% endblock %}
+{% block page_heading %}Dispatch Consignment / New Shipment{% endblock %}
+{% block page_subheading %}Issue goods from warehouse storage, allocate transit vehicle, and initiate tracking duration{% endblock %}
+
+{% block content %}
+<div style="max-width: 950px; margin: 0 auto;">
+    <div class="glass-card">
+        <div class="card-header">
+            <h3>Consignment Dispatch & Vehicle Allocation</h3>
+            <a href="{% url 'shipment_list' %}" class="btn btn-secondary btn-sm">← Back to Shipments</a>
+        </div>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-error">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            <div style="background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: var(--radius-sm); padding: 18px; margin-bottom: 24px;">
+                <h4 style="color: #60a5fa; font-size: 0.95rem; margin-bottom: 14px;">1. Select Goods & Inventory Batch</h4>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="{{ form.goods_item.id_for_label }}">Available Goods Item *</label>
+                        {{ form.goods_item }}
+                        <span class="form-help">Only goods currently Available in warehouses are listed.</span>
+                        {% if form.goods_item.errors %}<span style="color: #f87171; font-size: 0.75rem;">{{ form.goods_item.errors }}</span>{% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="{{ form.quantity_to_ship.id_for_label }}">Quantity to Dispatch *</label>
+                        {{ form.quantity_to_ship }}
+                        <span class="form-help">Must not exceed warehouse available stock.</span>
+                        {% if form.quantity_to_ship.errors %}<span style="color: #f87171; font-size: 0.75rem;">{{ form.quantity_to_ship.errors }}</span>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: var(--radius-sm); padding: 18px; margin-bottom: 24px;">
+                <h4 style="color: #34d399; font-size: 0.95rem; margin-bottom: 14px;">2. Origin Facility & Fleet Assignment</h4>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="{{ form.origin_warehouse.id_for_label }}">Origin Warehouse *</label>
+                        {{ form.origin_warehouse }}
+                        {% if form.origin_warehouse.errors %}<span style="color: #f87171; font-size: 0.75rem;">{{ form.origin_warehouse.errors }}</span>{% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="{{ form.vehicle.id_for_label }}">Assigned Vehicle & Driver</label>
+                        {{ form.vehicle }}
+                        <span class="form-help">Fleet vehicles available in yard.</span>
+                        {% if form.vehicle.errors %}<span style="color: #f87171; font-size: 0.75rem;">{{ form.vehicle.errors }}</span>{% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="{{ form.dispatch_time.id_for_label }}">Departure / Dispatch Timestamp *</label>
+                        {{ form.dispatch_time }}
+                        <span class="form-help">Transit duration timer begins from this timestamp.</span>
+                        {% if form.dispatch_time.errors %}<span style="color: #f87171; font-size: 0.75rem;">{{ form.dispatch_time.errors }}</span>{% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="{{ form.estimated_arrival.id_for_label }}">Estimated Arrival</label>
+                        {{ form.estimated_arrival }}
+                        {% if form.estimated_arrival.errors %}<span style="color: #f87171; font-size: 0.75rem;">{{ form.estimated_arrival.errors }}</span>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: var(--radius-sm); padding: 18px; margin-bottom: 24px;">
+                <h4 style="color: #fbbf24; font-size: 0.95rem; margin-bottom: 14px;">3. Destination & Consignee Details</h4>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="{{ form.destination_hub_or_consignee.id_for_label }}">Receiving Hub / Company Name *</label>
+                        {{ form.destination_hub_or_consignee }}
+                        {% if form.destination_hub_or_consignee.errors %}<span style="color: #f87171; font-size: 0.75rem;">{{ form.destination_hub_or_consignee.errors }}</span>{% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="{{ form.destination_city.id_for_label }}">Destination City / Hub *</label>
+                        {{ form.destination_city }}
+                        {% if form.destination_city.errors %}<span style="color: #f87171; font-size: 0.75rem;">{{ form.destination_city.errors }}</span>{% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="{{ form.recipient_name.id_for_label }}">Recipient / Contact Person *</label>
+                        {{ form.recipient_name }}
+                        {% if form.recipient_name.errors %}<span style="color: #f87171; font-size: 0.75rem;">{{ form.recipient_name.errors }}</span>{% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="{{ form.recipient_phone.id_for_label }}">Recipient Phone Number *</label>
+                        {{ form.recipient_phone }}
+                        {% if form.recipient_phone.errors %}<span style="color: #f87171; font-size: 0.75rem;">{{ form.recipient_phone.errors }}</span>{% endif %}
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label class="form-label" for="{{ form.destination_address.id_for_label }}">Full Delivery Address *</label>
+                        {{ form.destination_address }}
+                        {% if form.destination_address.errors %}<span style="color: #f87171; font-size: 0.75rem;">{{ form.destination_address.errors }}</span>{% endif %}
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label class="form-label" for="{{ form.remarks.id_for_label }}">Transit Remarks & Special Instructions</label>
+                        {{ form.remarks }}
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 14px;">
+                <a href="{% url 'shipment_list' %}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary" style="padding: 12px 28px;">
+                    🚀 Confirm Dispatch & Begin Transit Tracking
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

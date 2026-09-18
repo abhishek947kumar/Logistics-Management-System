@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Consumer Portal | LogiTrack Pro{% endblock %}</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <style>
+        :root {
+            --primary: #10b981;
+            --primary-hover: #059669;
+            --primary-glow: rgba(16, 185, 129, 0.25);
+            --consumer-nav-bg: rgba(15, 23, 42, 0.85);
+        }
+
+        body {
+            background: #090d16;
+            color: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        /* Top navigation header */
+        .consumer-nav {
+            background: var(--consumer-nav-bg);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            padding: 0 28px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .consumer-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: #fff;
+        }
+
+        .consumer-brand-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+        }
+
+        .consumer-brand-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            letter-spacing: -0.01em;
+            line-height: 1.1;
+        }
+
+        .consumer-brand-subtitle {
+            font-size: 0.72rem;
+            color: #34d399;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .consumer-menu {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .consumer-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 10px;
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .consumer-menu-item:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .consumer-menu-item.active {
+            color: #34d399;
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+
+        .consumer-user-area {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .user-chip {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 6px 14px;
+            border-radius: 9999px;
+        }
+
+        .user-chip-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #10b981, #047857);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 0.85rem;
+            color: #fff;
+        }
+
+        .user-chip-info {
+            line-height: 1.2;
+        }
+
+        .user-chip-name {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #f1f5f9;
+        }
+
+        .user-chip-role {
+            font-size: 0.7rem;
+            color: #34d399;
+            font-weight: 600;
+        }
+
+        .consumer-container {
+            max-width: 1350px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 32px 24px;
+            flex-grow: 1;
+        }
+
+        .consumer-footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 20px 28px;
+            font-size: 0.85rem;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: auto;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Top Nav Header -->
+    <header class="consumer-nav">
+        <a href="{% url 'consumer_dashboard' %}" class="consumer-brand">
+            <div class="consumer-brand-icon">📦</div>
+            <div>
+                <div class="consumer-brand-title">LogiTrack</div>
+                <div class="consumer-brand-subtitle">Consumer Portal</div>
+            </div>
+        </a>
+
+        <nav class="consumer-menu">
+            <a href="{% url 'consumer_dashboard' %}" class="consumer-menu-item {% if request.resolver_match.url_name == 'consumer_dashboard' %}active{% endif %}">
+                <span>📦</span>
+                <span>My Consignments</span>
+            </a>
+            <a href="{% url 'consumer_request_shipment' %}" class="consumer-menu-item {% if request.resolver_match.url_name == 'consumer_request_shipment' %}active{% endif %}">
+                <span>📝</span>
+                <span>Request Booking</span>
+            </a>
+            <a href="{% url 'consumer_profile' %}" class="consumer-menu-item {% if request.resolver_match.url_name == 'consumer_profile' %}active{% endif %}">
+                <span>🏢</span>
+                <span>Client Profile</span>
+            </a>
+            <a href="{% url 'public_tracking_search' %}" target="_blank" class="consumer-menu-item">
+                <span>🌐</span>
+                <span>Public Tracker ↗</span>
+            </a>
+        </nav>
+
+        <div class="consumer-user-area">
+            <div class="user-chip">
+                <div class="user-chip-avatar">{{ request.user.username|first|upper }}</div>
+                <div class="user-chip-info">
+                    <div class="user-chip-name">{{ user_profile.company_name|default:request.user.username }}</div>
+                    <div class="user-chip-role">Consignee Client</div>
+                </div>
+            </div>
+
+            <form action="{% url 'logout' %}" method="post" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-secondary btn-sm" title="Log Out of Consumer Portal" style="padding: 8px 14px;">
+                    🚪 Sign Out
+                </button>
+            </form>
+        </div>
+    </header>
+
+    <!-- Main Body Container -->
+    <main class="consumer-container">
+        {% if messages %}
+        <div class="alert-container" style="margin-bottom: 24px;">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }}">
+                <span>{{ message }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="consumer-footer">
+        <div>
+            <span>LogiTrack Pro • Consumer & Consignee Self-Service Hub</span>
+        </div>
+        <div>
+            <span style="color: #10b981;">● Real-Time Sync with Logistics Provider Network</span>
+        </div>
+    </footer>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

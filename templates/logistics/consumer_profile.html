@@ -1,0 +1,134 @@
+{% extends 'logistics/consumer_base.html' %}
+
+{% block title %}Client Profile & Delivery Facilities | LogiTrack Pro{% endblock %}
+
+{% block content %}
+<div style="max-width: 950px; margin: 0 auto;">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; margin-bottom: 24px;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                <a href="{% url 'consumer_dashboard' %}" class="btn btn-secondary btn-sm">← Back to Dashboard</a>
+                <span class="badge badge-success">Registered Client Account</span>
+            </div>
+            <h1 style="font-size: 1.8rem; font-weight: 800; color: #fff; margin: 0;">Client Company Profile</h1>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 24px;">
+        <!-- Left: Form -->
+        <div class="section-card">
+            <div class="section-header">
+                <div class="section-title">
+                    <span>🏢</span>
+                    <span>Company & Receiving Details</span>
+                </div>
+            </div>
+
+            {% if form.errors %}
+            <div class="alert alert-error" style="margin-bottom: 20px;">
+                <ul style="margin: 0; padding-left: 20px;">
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                            <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label class="form-label" for="id_company_name">Company / Individual Full Name *</label>
+                    {{ form.company_name }}
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="id_business_type">Organization Type</label>
+                        {{ form.business_type }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="id_gstin_or_tax_id">GSTIN / Tax Identifier</label>
+                        {{ form.gstin_or_tax_id }}
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="id_phone">Contact Phone</label>
+                        {{ form.phone }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="id_city">Primary City</label>
+                        {{ form.city }}
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 24px;">
+                    <label class="form-label" for="id_address">Default Delivery / Facility Receiving Address</label>
+                    {{ form.address }}
+                </div>
+
+                <button type="submit" class="btn" style="width: 100%; padding: 12px; font-weight: 700; background: linear-gradient(135deg, #10b981, #059669); color: #fff;">
+                    Save Profile & Contact Updates →
+                </button>
+            </form>
+        </div>
+
+        <!-- Right: Client Summary Card -->
+        <div>
+            <div class="section-card" style="margin-bottom: 20px;">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span>👤</span>
+                        <span>Account Information</span>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 14px;">
+                    <span style="font-size: 0.78rem; color: #94a3b8; display: block;">Client Username</span>
+                    <strong style="color: #fff; font-size: 1rem;">{{ request.user.username }}</strong>
+                </div>
+
+                <div style="margin-bottom: 14px;">
+                    <span style="font-size: 0.78rem; color: #94a3b8; display: block;">Contact Email</span>
+                    <strong style="color: #fff; font-size: 0.95rem;">{{ request.user.email }}</strong>
+                </div>
+
+                <div style="margin-bottom: 14px;">
+                    <span style="font-size: 0.78rem; color: #94a3b8; display: block;">Commercial GSTIN</span>
+                    <strong style="color: #34d399; font-family: monospace; font-size: 0.95rem;">{{ profile.gstin_or_tax_id|default:"Optional / Unregistered" }}</strong>
+                </div>
+
+                <div style="margin-bottom: 14px;">
+                    <span style="font-size: 0.78rem; color: #94a3b8; display: block;">Registered Role</span>
+                    <span class="badge badge-success">Consumer / Consignee</span>
+                </div>
+
+                <div style="padding-top: 14px; border-top: 1px dashed rgba(255,255,255,0.08); font-size: 0.8rem; color: #64748b;">
+                    Client of LogiTrack Network since {{ profile.created_at|date:"M Y" }}
+                </div>
+            </div>
+
+            <div class="section-card">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span>⚡</span>
+                        <span>Client Actions</span>
+                    </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <a href="{% url 'consumer_request_shipment' %}" class="btn" style="text-align: center; background: linear-gradient(135deg, #10b981, #059669); color: #fff; padding: 10px;">
+                        + Request Cargo Booking
+                    </a>
+                    <a href="{% url 'consumer_dashboard' %}" class="btn btn-secondary btn-sm" style="text-align: center;">
+                        📦 View My Active Consignments
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

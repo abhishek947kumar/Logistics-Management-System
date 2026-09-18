@@ -1,0 +1,141 @@
+{% extends 'logistics/base.html' %}
+
+{% block title %}Dealer Company Profile & Credentials | LogiTrack Pro{% endblock %}
+{% block page_heading %}Commercial Provider Profile{% endblock %}
+{% block page_subheading %}Manage company credentials, GSTIN registration, business categories, and operational hubs{% endblock %}
+
+{% block content %}
+<div style="max-width: 1050px; margin: 0 auto;">
+    <!-- Stats Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; margin-bottom: 28px;">
+        <div class="glass-card" style="padding: 20px;">
+            <div style="font-size: 0.8rem; color: #94a3b8; text-transform: uppercase;">Total Serviced Shipments</div>
+            <div style="font-size: 2rem; font-weight: 800; color: #60a5fa; margin-top: 6px;">{{ total_dispatched }}</div>
+        </div>
+        <div class="glass-card" style="padding: 20px;">
+            <div style="font-size: 0.8rem; color: #94a3b8; text-transform: uppercase;">Delivered at Destination</div>
+            <div style="font-size: 2rem; font-weight: 800; color: #34d399; margin-top: 6px;">{{ delivered_count }}</div>
+        </div>
+        <div class="glass-card" style="padding: 20px;">
+            <div style="font-size: 0.8rem; color: #94a3b8; text-transform: uppercase;">Operating Hubs / Warehouses</div>
+            <div style="font-size: 2rem; font-weight: 800; color: #fbbf24; margin-top: 6px;">{{ active_warehouses }}</div>
+        </div>
+        <div class="glass-card" style="padding: 20px;">
+            <div style="font-size: 0.8rem; color: #94a3b8; text-transform: uppercase;">Fleet Transport Units</div>
+            <div style="font-size: 2rem; font-weight: 800; color: #c084fc; margin-top: 6px;">{{ active_fleet }}</div>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px;">
+        <!-- Left: Update Profile Form -->
+        <div class="glass-card">
+            <div class="card-header">
+                <h3>Commercial Company Credentials</h3>
+                <span class="badge badge-success">Verified Dealer</span>
+            </div>
+
+            {% if form.errors %}
+            <div class="alert alert-error" style="margin-bottom: 20px;">
+                <ul style="margin: 0; padding-left: 20px;">
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                            <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label class="form-label" for="id_company_name">Company / Trading Name *</label>
+                    {{ form.company_name }}
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="id_business_type">Business Classification</label>
+                        {{ form.business_type }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="id_gstin_or_tax_id">Tax ID / GSTIN</label>
+                        {{ form.gstin_or_tax_id }}
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="id_phone">Operations Phone</label>
+                        {{ form.phone }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="id_city">Operating City</label>
+                        {{ form.city }}
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 24px;">
+                    <label class="form-label" for="id_address">Registered Head Office Address</label>
+                    {{ form.address }}
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; font-weight: 700;">
+                    Save Commercial Profile Updates →
+                </button>
+            </form>
+        </div>
+
+        <!-- Right: Business Overview & Credentials Badge -->
+        <div>
+            <div class="glass-card" style="margin-bottom: 20px;">
+                <div class="card-header">
+                    <h3>Account Summary</h3>
+                    <span style="font-size: 0.75rem; color: #94a3b8;">ID: #{{ request.user.id }}</span>
+                </div>
+
+                <div style="margin-bottom: 14px;">
+                    <span style="font-size: 0.78rem; color: #94a3b8; display: block;">Login Username</span>
+                    <strong style="color: #fff; font-size: 1rem;">{{ request.user.username }}</strong>
+                </div>
+
+                <div style="margin-bottom: 14px;">
+                    <span style="font-size: 0.78rem; color: #94a3b8; display: block;">Official Email</span>
+                    <strong style="color: #fff; font-size: 0.95rem;">{{ request.user.email }}</strong>
+                </div>
+
+                <div style="margin-bottom: 14px;">
+                    <span style="font-size: 0.78rem; color: #94a3b8; display: block;">Commercial GSTIN</span>
+                    <strong style="color: #60a5fa; font-family: monospace; font-size: 0.95rem;">{{ profile.gstin_or_tax_id|default:"Not specified" }}</strong>
+                </div>
+
+                <div style="margin-bottom: 14px;">
+                    <span style="font-size: 0.78rem; color: #94a3b8; display: block;">Operating Network</span>
+                    <span class="badge badge-info">{{ profile.get_role_display }}</span>
+                </div>
+
+                <div style="padding-top: 14px; border-top: 1px dashed rgba(255,255,255,0.08); font-size: 0.8rem; color: #64748b;">
+                    Member of LogiTrack Commercial Network since {{ profile.created_at|date:"M Y" }}
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <div class="card-header">
+                    <h3>Quick Operations</h3>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <a href="{% url 'shipment_dispatch' %}" class="btn btn-primary btn-sm" style="text-align: center;">
+                        + Dispatch New Consignment
+                    </a>
+                    <a href="{% url 'provider_requests' %}" class="btn btn-secondary btn-sm" style="text-align: center;">
+                        📥 Review Client Booking Requests
+                    </a>
+                    <a href="{% url 'warehouse_list' %}" class="btn btn-secondary btn-sm" style="text-align: center;">
+                        🏭 Manage Operating Hubs
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

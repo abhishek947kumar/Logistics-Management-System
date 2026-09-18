@@ -1,0 +1,58 @@
+{% extends 'logistics/base.html' %}
+
+{% block title %}Notification Center - LogiTrack Pro{% endblock %}
+{% block page_heading %}Operational Notifications & System Events{% endblock %}
+{% block page_subheading %}Audit feed of consignment dispatches, waypoint crossings, goods arrivals, and customer inquiries{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 0 auto;">
+    <div class="glass-card">
+        <div class="card-header">
+            <h3>Recent System Notifications</h3>
+            <a href="{% url 'mark_notifications_read' %}" class="btn btn-secondary btn-sm">
+                ✓ Mark All As Read
+            </a>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+            {% for n in notifications %}
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid {% if not n.is_read %}rgba(59, 130, 246, 0.4){% else %}var(--bg-card-border){% endif %}; border-radius: var(--radius-sm); padding: 16px 20px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;">
+                <div style="display: flex; gap: 14px;">
+                    <div style="font-size: 1.5rem;">
+                        {% if n.category == 'DISPATCH' %}🚀
+                        {% elif n.category == 'ARRIVAL' %}✅
+                        {% elif n.category == 'CHECKPOINT' %}📍
+                        {% elif n.category == 'ENQUIRY' %}💬
+                        {% else %}📦{% endif %}
+                    </div>
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <strong style="color: #fff; font-size: 0.95rem;">{{ n.title }}</strong>
+                            {% if not n.is_read %}
+                                <span class="badge badge-warning" style="font-size: 0.65rem;">NEW</span>
+                            {% endif %}
+                        </div>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px;">
+                            {{ n.message }}
+                        </p>
+                        <span style="font-size: 0.75rem; color: var(--text-muted); margin-top: 6px; display: block;">
+                            {{ n.created_at|date:"d M Y at H:i" }}
+                        </span>
+                    </div>
+                </div>
+
+                {% if n.link %}
+                <a href="{{ n.link }}" class="btn btn-secondary btn-sm" style="white-space: nowrap;">
+                    View &rarr;
+                </a>
+                {% endif %}
+            </div>
+            {% empty %}
+            <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+                No notifications logged yet.
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

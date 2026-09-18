@@ -1,0 +1,101 @@
+{% extends 'logistics/base.html' %}
+
+{% block title %}Approve & Dispatch Booking #REQ-{{ booking_req.id }} | LogiTrack Pro{% endblock %}
+{% block page_heading %}Approve Client Consignment Booking{% endblock %}
+{% block page_subheading %}Assign warehouse facility, vehicle carrier, and schedule dispatch for consumer booking #REQ-{{ booking_req.id }}{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 0 auto;">
+    <div style="margin-bottom: 20px;">
+        <a href="{% url 'provider_requests' %}" class="btn btn-secondary btn-sm">← Back to Requests Inbox</a>
+    </div>
+
+    <!-- Booking Summary Card -->
+    <div class="glass-card" style="margin-bottom: 24px; border-color: rgba(59, 130, 246, 0.3);">
+        <div class="card-header">
+            <h3>Client Booking Specification (#REQ-{{ booking_req.id }})</h3>
+            <span class="badge badge-warning">Pending Provider Approval</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 18px;">
+            <div>
+                <span style="color: var(--text-muted); font-size: 0.8rem; display: block;">Consumer Account:</span>
+                <strong style="color: #fff; font-size: 0.95rem;">{{ booking_req.consumer.profile.company_name|default:booking_req.consumer.username }}</strong>
+                <div style="font-size: 0.78rem; color: #64748b;">Contact: {{ booking_req.consumer.profile.phone|default:"N/A" }}</div>
+            </div>
+
+            <div>
+                <span style="color: var(--text-muted); font-size: 0.8rem; display: block;">Requested Cargo:</span>
+                <strong style="color: #60a5fa; font-size: 0.95rem;">{{ booking_req.goods_name }}</strong>
+                <div style="font-size: 0.78rem; color: #64748b;">{{ booking_req.quantity }} {{ booking_req.unit }} &bull; {{ booking_req.get_category_display }}</div>
+            </div>
+
+            <div>
+                <span style="color: var(--text-muted); font-size: 0.8rem; display: block;">Route Requirement:</span>
+                <strong style="color: #fff; font-size: 0.95rem;">{{ booking_req.origin_city }} ➔ {{ booking_req.destination_city }}</strong>
+                <div style="font-size: 0.78rem; color: #64748b;">Requested on: {{ booking_req.created_at|date:"M d, H:i" }}</div>
+            </div>
+        </div>
+
+        <div style="padding-top: 14px; border-top: 1px dashed rgba(255, 255, 255, 0.08); font-size: 0.85rem;">
+            <div style="margin-bottom: 6px;">
+                <span style="color: var(--text-muted);">Destination Address:</span>
+                <span style="color: #cbd5e1;">{{ booking_req.destination_address }}</span>
+            </div>
+            {% if booking_req.special_instructions %}
+            <div>
+                <span style="color: var(--text-muted);">Special Instructions:</span>
+                <span style="color: #fbbf24;">{{ booking_req.special_instructions }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Provider Assignment Form -->
+    <div class="glass-card">
+        <div class="card-header">
+            <h3>Dispatch Scheduling & Fleet Assignment</h3>
+            <span style="font-size: 0.8rem; color: #94a3b8;">Creates synced active shipment</span>
+        </div>
+
+        {% if form.errors %}
+        <div class="alert alert-error" style="margin-bottom: 20px;">
+            <ul style="margin: 0; padding-left: 20px;">
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <div class="form-group">
+                    <label class="form-label" for="id_warehouse">Origin Warehouse Facility *</label>
+                    {{ form.warehouse }}
+                    <small style="color: #64748b; font-size: 0.78rem;">Select dispatch inventory hub</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="id_vehicle">Assigned Fleet Vehicle & Driver</label>
+                    {{ form.vehicle }}
+                    <small style="color: #64748b; font-size: 0.78rem;">Carrier for transit journey</small>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 28px;">
+                <label class="form-label" for="id_estimated_arrival">Estimated Arrival Date & Time *</label>
+                {{ form.estimated_arrival }}
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px; font-weight: 700; font-size: 1rem;">
+                🚀 Confirm Approval & Dispatch Consignment →
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

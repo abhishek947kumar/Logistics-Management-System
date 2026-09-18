@@ -1,0 +1,120 @@
+{% extends 'logistics/base.html' %}
+
+{% block title %}Shipments & Freight - Logistics Management System{% endblock %}
+{% block page_heading %}Consignments & Transit Monitoring{% endblock %}
+{% block page_subheading %}Track movement of goods, fleet dispatch, and destination arrival timestamps{% endblock %}
+
+{% block content %}
+<!-- Filter Bar -->
+<div class="filter-bar">
+    <form method="get" action="{% url 'shipment_list' %}" style="display: flex; gap: 14px; flex: 1; flex-wrap: wrap;">
+        <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" name="q" value="{{ search_query }}" class="form-input" placeholder="Search tracking number, destination, or recipient...">
+        </div>
+
+        <div style="min-width: 170px;">
+            <select name="status" class="form-select" onchange="this.form.submit()">
+                <option value="">All Shipment Statuses</option>
+                <option value="Dispatched" {% if selected_status == 'Dispatched' %}selected{% endif %}>In Transit / Dispatched</option>
+                <option value="Delivered" {% if selected_status == 'Delivered' %}selected{% endif %}>Delivered / Arrived</option>
+                <option value="Delayed" {% if selected_status == 'Delayed' %}selected{% endif %}>Delayed</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+        {% if search_query or selected_status %}
+            <a href="{% url 'shipment_list' %}" class="btn btn-secondary btn-sm">Reset</a>
+        {% endif %}
+    </form>
+
+    <div style="margin-left: auto;">
+        <a href="{% url 'shipment_dispatch' %}" class="btn btn-primary btn-sm">+ Dispatch New Shipment</a>
+    </div>
+</div>
+
+<!-- Shipments Table -->
+<div class="glass-card">
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Tracking ID</th>
+                    <th>Route (Origin &rarr; Destination)</th>
+                    <th>Dispatched Goods</th>
+                    <th>Vehicle & Driver</th>
+                    <th>Departure Time</th>
+                    <th>Transit Duration</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for shipment in shipments %}
+                <tr>
+                    <td>
+                        <a href="{% url 'tracking_detail' shipment.tracking_number %}" style="font-weight: 700; color: #60a5fa; font-family: monospace;">
+                            {{ shipment.tracking_number }}
+                        </a>
+                    </td>
+                    <td>
+                        <strong>{{ shipment.origin_warehouse.city }}</strong> &rarr; <strong>{{ shipment.destination_city }}</strong><br>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">Recipient: {{ shipment.recipient_name }} ({{ shipment.recipient_phone }})</span>
+                    </td>
+                    <td>
+                        {% for item in shipment.items.all %}
+                            <span>{{ item.quantity_shipped }}x {{ item.goods_item.name }}</span><br>
+                        {% empty %}
+                            <span style="color: var(--text-muted);">Consignment items</span>
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% if shipment.vehicle %}
+                            <strong>{{ shipment.vehicle.vehicle_number }}</strong><br>
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">Driver: {{ shipment.vehicle.driver_name }}</span>
+                        {% else %}
+                            <span style="color: var(--text-muted);">Third-party Freight</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size: 0.8rem; color: var(--text-muted);">
+                        {{ shipment.dispatch_time|date:"d M Y, H:i" }}
+                    </td>
+                    <td>
+                        <strong style="color: {% if shipment.is_delivered %}#34d399{% else %}#60a5fa{% endif %};">
+                            {{ shipment.transit_duration_display }}
+                        </strong>
+                        {% if not shipment.is_delivered %}
+                            <span class="pulse-indicator" style="margin-left: 4px;" title="Active transit"></span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if shipment.status == 'Dispatched' %}
+                            <span class="badge badge-in-transit">🚚 In Transit</span>
+                        {% elif shipment.status == 'Delivered' %}
+                            <span class="badge badge-delivered">✅ Delivered</span>
+                        {% else %}
+                            <span class="badge badge-info">{{ shipment.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 6px;">
+                            <a href="{% url 'tracking_detail' shipment.tracking_number %}" class="btn btn-secondary btn-sm" title="Live Tracking">📍 Track</a>
+                            {% if shipment.status != 'Delivered' %}
+                                <a href="{% url 'goods_arrival' shipment.id %}" class="btn btn-success btn-sm" title="Update Arrival">Arrival</a>
+                            {% endif %}
+                            <a href="{% url 'shipment_invoice' shipment.id %}" class="btn btn-secondary btn-sm" title="Dispatch Challan">📄</a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                        No shipments found matching the criteria. Click <a href="{% url 'shipment_dispatch' %}">Dispatch New Shipment</a> to generate one.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

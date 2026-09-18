@@ -1,0 +1,176 @@
+{% extends 'logistics/base.html' %}
+
+{% block title %}Logistics Reports & Analytics - LMS{% endblock %}
+{% block page_heading %}Logistics Analytics & Performance Reports{% endblock %}
+{% block page_subheading %}Warehouse throughput, goods category distribution, and completed shipment transit duration statistics{% endblock %}
+
+{% block content %}
+<!-- Top Level KPI Metrics -->
+<div class="kpi-grid">
+    <div class="kpi-card blue">
+        <div class="kpi-info">
+            <h4>Inventory Valuation</h4>
+            <div class="kpi-number">₹{{ total_value|floatformat:0 }}</div>
+            <div class="kpi-subtext">Total declared cargo value</div>
+        </div>
+        <div class="kpi-icon">💰</div>
+    </div>
+
+    <div class="kpi-card green">
+        <div class="kpi-info">
+            <h4>Total Units Stored</h4>
+            <div class="kpi-number">{{ total_quantity }}</div>
+            <div class="kpi-subtext">Across all warehouse networks</div>
+        </div>
+        <div class="kpi-icon">📊</div>
+    </div>
+
+    <div class="kpi-card amber">
+        <div class="kpi-info">
+            <h4>Active In-Transit</h4>
+            <div class="kpi-number">{{ active_count }}</div>
+            <div class="kpi-subtext">Consignments on highway route</div>
+        </div>
+        <div class="kpi-icon">🚚</div>
+    </div>
+
+    <div class="kpi-card purple">
+        <div class="kpi-info">
+            <h4>Successful Deliveries</h4>
+            <div class="kpi-number">{{ delivered_count }}</div>
+            <div class="kpi-subtext">Completed transit journeys</div>
+        </div>
+        <div class="kpi-icon">✅</div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 28px;">
+    <!-- Category Distribution -->
+    <div class="glass-card" style="margin-bottom: 0;">
+        <div class="card-header">
+            <h3>Inventory by Industry Category</h3>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Distinct SKUs</th>
+                        <th>Total Quantity</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cat in category_summary %}
+                    <tr>
+                        <td><strong>{{ cat.category }}</strong></td>
+                        <td>{{ cat.total }} items</td>
+                        <td><strong style="color: #60a5fa;">{{ cat.qty }} units</strong></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">No data available.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Inventory by Status -->
+    <div class="glass-card" style="margin-bottom: 0;">
+        <div class="card-header">
+            <h3>Inventory Status Distribution</h3>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>Distinct Items</th>
+                        <th>Total Units</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for st in status_summary %}
+                    <tr>
+                        <td>
+                            {% if st.status == 'Available' %}
+                                <span class="badge badge-available">In Warehouse</span>
+                            {% elif st.status == 'In Transit' %}
+                                <span class="badge badge-in-transit">In Transit</span>
+                            {% elif st.status == 'Delivered' %}
+                                <span class="badge badge-delivered">Delivered</span>
+                            {% elif st.status == 'Issued' %}
+                                <span class="badge badge-issued">Issued</span>
+                            {% else %}
+                                <span class="badge badge-damaged">{{ st.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ st.total }} items</td>
+                        <td><strong>{{ st.qty }}</strong></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">No data available.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Completed Deliveries & Historical Transit Durations -->
+<div class="glass-card">
+    <div class="card-header">
+        <div>
+            <h3>Completed Consignments & Transit Durations Log</h3>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Demonstrates arrival time & duration performance</span>
+        </div>
+        <div class="card-actions">
+            <a href="{% url 'export_goods_csv' %}" class="btn btn-secondary btn-sm">📥 Export Inventory CSV</a>
+            <a href="{% url 'export_transit_csv' %}" class="btn btn-primary btn-sm">📥 Export Transit CSV</a>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Tracking ID</th>
+                    <th>Origin Hub</th>
+                    <th>Destination</th>
+                    <th>Dispatched</th>
+                    <th>Arrival Recorded</th>
+                    <th>Total Transit Duration</th>
+                    <th>Condition / Receiver</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in delivered_shipments %}
+                <tr>
+                    <td>
+                        <a href="{% url 'tracking_detail' d.tracking_number %}" style="font-family: monospace; color: #60a5fa; font-weight: 700;">
+                            {{ d.tracking_number }}
+                        </a>
+                    </td>
+                    <td>{{ d.origin_warehouse.name }}</td>
+                    <td><strong>{{ d.destination_city }}</strong></td>
+                    <td style="font-size: 0.8rem; color: var(--text-muted);">{{ d.dispatch_time|date:"d M, H:i" }}</td>
+                    <td style="font-size: 0.8rem; color: var(--text-muted);">{{ d.actual_arrival|date:"d M, H:i" }}</td>
+                    <td>
+                        <strong style="color: #34d399; font-size: 0.95rem;">{{ d.transit_duration_display }}</strong>
+                    </td>
+                    <td>
+                        <span class="badge badge-success">{{ d.delivery_condition }}</span><br>
+                        <span style="font-size: 0.72rem; color: var(--text-muted);">By: {{ d.received_by_signature_name|default:"Consignee" }}</span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 32px; color: var(--text-muted);">
+                        No delivered shipments yet. Mark active consignments as Arrived to populate duration history.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

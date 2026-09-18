@@ -1,0 +1,75 @@
+{% extends 'logistics/base.html' %}
+
+{% block title %}Track Goods - Logistics Management System{% endblock %}
+{% block page_heading %}Consignment & Transit Tracking{% endblock %}
+{% block page_subheading %}Look up any goods consignment to monitor route checkpoints and elapsed transportation duration{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 20px auto 40px;">
+    <div class="glass-card" style="text-align: center; padding: 40px 32px;">
+        <div style="font-size: 3rem; margin-bottom: 12px;">📍</div>
+        <h3 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 8px;">Track Consignment In Transit</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 24px;">
+            Enter the LMS Consignment Tracking ID to view detailed route progress and elapsed duration
+        </p>
+
+        <form method="get" action="{% url 'tracking_search' %}" style="display: flex; gap: 12px; max-width: 550px; margin: 0 auto;">
+            <input type="text" name="tracking_number" class="form-input" placeholder="e.g. LMS-260918-A1B2C3" style="font-size: 1rem; padding: 12px 18px;" required>
+            <button type="submit" class="btn btn-primary" style="padding: 12px 24px;">Track Now</button>
+        </form>
+    </div>
+</div>
+
+<div class="glass-card">
+    <div class="card-header">
+        <h3>Recent Consignments</h3>
+        <span style="font-size: 0.8rem; color: var(--text-muted);">Quick-click to inspect tracking timeline</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Tracking ID</th>
+                    <th>Route</th>
+                    <th>Departure</th>
+                    <th>Duration</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in recent_shipments %}
+                <tr>
+                    <td><strong style="color: #60a5fa; font-family: monospace;">{{ s.tracking_number }}</strong></td>
+                    <td>{{ s.origin_warehouse.city }} &rarr; {{ s.destination_city }}</td>
+                    <td style="font-size: 0.8rem; color: var(--text-muted);">{{ s.dispatch_time|date:"d M, H:i" }}</td>
+                    <td>
+                        <strong>{{ s.transit_duration_display }}</strong>
+                        {% if not s.is_delivered %}<span class="pulse-indicator" style="margin-left: 4px;"></span>{% endif %}
+                    </td>
+                    <td>
+                        {% if s.status == 'Dispatched' %}
+                            <span class="badge badge-in-transit">🚚 In Transit</span>
+                        {% elif s.status == 'Delivered' %}
+                            <span class="badge badge-delivered">✅ Delivered</span>
+                        {% else %}
+                            <span class="badge badge-info">{{ s.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'tracking_detail' s.tracking_number %}" class="btn btn-primary btn-sm">Inspect &rarr;</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 32px; color: var(--text-muted);">
+                        No shipments found.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

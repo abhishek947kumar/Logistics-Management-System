@@ -1,0 +1,504 @@
+{% extends 'logistics/consumer_base.html' %}
+{% load static %}
+
+{% block title %}Tracking {{ shipment.tracking_number }} | Consumer Portal{% endblock %}
+
+{% block extra_css %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<style>
+    .detail-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stepper-card {
+        background: rgba(17, 24, 39, 0.75);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 18px;
+        padding: 24px 32px;
+        margin-bottom: 28px;
+    }
+
+    .stepper {
+        display: flex;
+        justify-content: space-between;
+        position: relative;
+    }
+
+    .stepper::before {
+        content: '';
+        position: absolute;
+        top: 20px;
+        left: 30px;
+        right: 30px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.1);
+        z-index: 1;
+    }
+
+    .step-item {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        flex: 1;
+    }
+
+    .step-circle {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: #1e293b;
+        border: 2px solid #475569;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        color: #94a3b8;
+        margin-bottom: 8px;
+        transition: all 0.3s;
+    }
+
+    .step-item.completed .step-circle {
+        background: #10b981;
+        border-color: #34d399;
+        color: #fff;
+        box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+    }
+
+    .step-item.active .step-circle {
+        background: #3b82f6;
+        border-color: #60a5fa;
+        color: #fff;
+        box-shadow: 0 0 15px rgba(59, 130, 246, 0.6);
+        animation: pulse-step 2s infinite;
+    }
+
+    @keyframes pulse-step {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.08); }
+        100% { transform: scale(1); }
+    }
+
+    .step-title {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #e2e8f0;
+    }
+
+    .step-subtitle {
+        font-size: 0.72rem;
+        color: #94a3b8;
+        margin-top: 2px;
+    }
+
+    .grid-2col {
+        display: grid;
+        grid-template-columns: 2fr 1.1fr;
+        gap: 24px;
+    }
+
+    @media (max-width: 960px) {
+        .grid-2col {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    #route-map {
+        height: 380px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        margin-bottom: 24px;
+    }
+
+    .info-card {
+        background: rgba(17, 24, 39, 0.75);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 18px;
+        padding: 24px;
+        margin-bottom: 24px;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        font-size: 0.88rem;
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        color: #94a3b8;
+    }
+
+    .info-val {
+        color: #fff;
+        font-weight: 600;
+        text-align: right;
+    }
+
+    .timeline {
+        position: relative;
+        padding-left: 24px;
+    }
+
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 7px;
+        top: 6px;
+        bottom: 6px;
+        width: 2px;
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .timeline-item {
+        position: relative;
+        margin-bottom: 18px;
+    }
+
+    .timeline-dot {
+        position: absolute;
+        left: -24px;
+        top: 4px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #10b981;
+        border: 2px solid #090d16;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="detail-header">
+    <div>
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 6px;">
+            <a href="{% url 'consumer_dashboard' %}" class="btn btn-secondary btn-sm">← Back to Dashboard</a>
+            <span style="font-family: monospace; font-size: 1.3rem; font-weight: 800; color: #34d399;">
+                {{ shipment.tracking_number }}
+            </span>
+            <span class="badge {% if shipment.status == 'Delivered' %}badge-success{% else %}badge-info{% endif %}">
+                {{ shipment.status }}
+            </span>
+        </div>
+        <p style="color: #94a3b8; font-size: 0.9rem; margin: 0;">
+            Booked for Consignee: <strong>{{ shipment.destination_hub_or_consignee }}</strong> ({{ shipment.destination_city }})
+        </p>
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+        <a href="{% url 'shipment_invoice' shipment.id %}" target="_blank" class="btn btn-secondary btn-sm">
+            📄 Download e-Challan / Invoice
+        </a>
+    </div>
+</div>
+
+<!-- Progress Stepper -->
+<div class="stepper-card">
+    <div class="stepper">
+        <div class="step-item completed">
+            <div class="step-circle">✓</div>
+            <div class="step-title">Dispatched</div>
+            <div class="step-subtitle">{{ shipment.dispatch_time|date:"M d, H:i" }}</div>
+        </div>
+
+        <div class="step-item {% if checkpoints.exists %}completed{% elif not shipment.is_delivered %}active{% endif %}">
+            <div class="step-circle">📍</div>
+            <div class="step-title">In Transit</div>
+            <div class="step-subtitle">{{ checkpoints.count }} Waypoint{{ checkpoints.count|pluralize }}</div>
+        </div>
+
+        <div class="step-item {% if shipment.is_delivered %}completed{% else %}active{% endif %}">
+            <div class="step-circle">🚛</div>
+            <div class="step-title">Out for Delivery</div>
+            <div class="step-subtitle">To {{ shipment.destination_city }}</div>
+        </div>
+
+        <div class="step-item {% if shipment.is_delivered %}completed{% endif %}">
+            <div class="step-circle">🏁</div>
+            <div class="step-title">Delivered</div>
+            <div class="step-subtitle">
+                {% if shipment.is_delivered %}
+                    {{ shipment.actual_arrival|date:"M d, H:i" }}
+                {% else %}
+                    ETA: {{ shipment.estimated_arrival|date:"M d, H:i" }}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main 2-Column Content -->
+<div class="grid-2col">
+    <!-- Left Column: Map & Checkpoints -->
+    <div>
+        <div class="info-card">
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff; margin-bottom: 16px;">
+                🗺️ Live Freight Transit Map
+            </h3>
+            <div id="route-map"></div>
+
+            <!-- Goods Items Manifest -->
+            <h4 style="font-size: 0.95rem; font-weight: 700; color: #cbd5e1; margin-bottom: 12px;">Consignment Cargo Manifest</h4>
+            <div class="table-container" style="margin-bottom: 24px;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>SKU</th>
+                            <th>Item Name</th>
+                            <th>Category</th>
+                            <th>Quantity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                        <tr>
+                            <td style="font-family: monospace;">{{ item.goods_item.sku }}</td>
+                            <td><strong>{{ item.goods_item.name }}</strong></td>
+                            <td>{{ item.goods_item.get_category_display }}</td>
+                            <td><strong>{{ item.quantity_shipped }} {{ item.goods_item.unit }}</strong></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" style="text-align: center; color: #64748b;">Consignment manifest details provided by dispatcher.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Waypoint Checkpoints -->
+            <h4 style="font-size: 0.95rem; font-weight: 700; color: #cbd5e1; margin-bottom: 14px;">Waypoint Timeline Log</h4>
+            <div class="timeline">
+                <!-- Origin Point -->
+                <div class="timeline-item">
+                    <div class="timeline-dot" style="background: #3b82f6;"></div>
+                    <div style="font-size: 0.85rem; font-weight: 700; color: #fff;">
+                        {{ shipment.origin_warehouse.name }}, {{ shipment.origin_warehouse.city }}
+                    </div>
+                    <div style="font-size: 0.75rem; color: #94a3b8;">
+                        Dispatched on {{ shipment.dispatch_time|date:"M d, Y - H:i" }}
+                    </div>
+                </div>
+
+                <!-- Checkpoints -->
+                {% for cp in checkpoints %}
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div style="font-size: 0.85rem; font-weight: 700; color: #34d399;">
+                        {{ cp.location_name }}
+                    </div>
+                    <div style="font-size: 0.82rem; color: #cbd5e1; margin-top: 2px;">
+                        {{ cp.status_note }}
+                    </div>
+                    <div style="font-size: 0.72rem; color: #64748b; margin-top: 2px;">
+                        {{ cp.timestamp|date:"M d, Y - H:i" }}
+                    </div>
+                </div>
+                {% endfor %}
+
+                <!-- Destination / Delivered -->
+                {% if shipment.is_delivered %}
+                <div class="timeline-item">
+                    <div class="timeline-dot" style="background: #10b981;"></div>
+                    <div style="font-size: 0.85rem; font-weight: 700; color: #10b981;">
+                        Delivered to {{ shipment.destination_hub_or_consignee }} ({{ shipment.destination_city }})
+                    </div>
+                    <div style="font-size: 0.78rem; color: #cbd5e1;">
+                        Condition: {{ shipment.delivery_condition }} • Received by: {{ shipment.received_by_signature_name }}
+                    </div>
+                    <div style="font-size: 0.72rem; color: #64748b;">
+                        {{ shipment.actual_arrival|date:"M d, Y - H:i" }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Shipment Meta & Support Enquiry -->
+    <div>
+        <!-- Consignment Details Card -->
+        <div class="info-card">
+            <h3 style="font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 14px;">Consignment Details</h3>
+            
+            <div class="info-row">
+                <span class="info-label">Origin Facility:</span>
+                <span class="info-val">{{ shipment.origin_warehouse.name }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Destination Address:</span>
+                <span class="info-val">{{ shipment.destination_address }} ({{ shipment.destination_city }})</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Carrier Vehicle:</span>
+                <span class="info-val">{{ shipment.vehicle.vehicle_number|default:"Dedicated Transit Carrier" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Designated Driver:</span>
+                <span class="info-val">{{ shipment.vehicle.driver_name|default:"Assigned Driver" }} ({{ shipment.vehicle.driver_phone|default:"In-Fleet Contact" }})</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Estimated Delivery:</span>
+                <span class="info-val" style="color: #34d399;">{{ shipment.estimated_arrival|date:"M d, Y - H:i" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Transit Duration:</span>
+                <span class="info-val">{{ transit_info.formatted_duration }}</span>
+            </div>
+        </div>
+
+        <!-- Submit Delivery Enquiry Form -->
+        <div class="info-card">
+            <h3 style="font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 8px;">Submit Delivery Enquiry</h3>
+            <p style="color: #94a3b8; font-size: 0.82rem; margin-bottom: 16px;">
+                Have questions or need to coordinate arrival timing? Your enquiry links directly to the logistics dispatcher desk.
+            </p>
+
+            <form method="post" action="{% url 'submit_enquiry' shipment.tracking_number %}">
+                {% csrf_token %}
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label class="form-label" style="font-size: 0.8rem;">Your Name / Company</label>
+                    {{ enquiry_form.customer_name }}
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label class="form-label" style="font-size: 0.8rem;">Contact Phone</label>
+                    {{ enquiry_form.customer_phone }}
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label class="form-label" style="font-size: 0.8rem;">Email Address</label>
+                    {{ enquiry_form.customer_email }}
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label class="form-label" style="font-size: 0.8rem;">Subject</label>
+                    {{ enquiry_form.subject }}
+                </div>
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label class="form-label" style="font-size: 0.8rem;">Message Details</label>
+                    {{ enquiry_form.message }}
+                </div>
+                <button type="submit" class="btn" style="width: 100%; padding: 11px; font-weight: 700; background: linear-gradient(135deg, #10b981, #059669); color: #fff;">
+                    Send Enquiry to Provider Desk →
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const originLat = {{ shipment.origin_warehouse.latitude }};
+    const originLng = {{ shipment.origin_warehouse.longitude }};
+    const destLat = {{ shipment.dest_latitude }};
+    const destLng = {{ shipment.dest_longitude }};
+    const isDelivered = {{ shipment.is_delivered|yesno:"true,false" }};
+    const progressRatio = {{ shipment.progress_percentage }} / 100;
+
+    // Initialize Map
+    const map = L.map('route-map').setView([originLat, originLng], 6);
+
+    // Dark CartoDB Tiles
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+        maxZoom: 19
+    }).addTo(map);
+
+    // Custom Marker Icons
+    const originIcon = L.divIcon({
+        className: 'custom-map-icon',
+        html: '<div style="background:#3b82f6; color:#fff; width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 0 14px rgba(59,130,246,0.7); font-size:16px;">🏭</div>',
+        iconSize: [34, 34],
+        iconAnchor: [17, 17]
+    });
+
+    const destIcon = L.divIcon({
+        className: 'custom-map-icon',
+        html: '<div style="background:#ef4444; color:#fff; width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 0 14px rgba(239,68,68,0.7); font-size:16px;">🏢</div>',
+        iconSize: [34, 34],
+        iconAnchor: [17, 17]
+    });
+
+    const truckIcon = L.divIcon({
+        className: 'custom-map-icon',
+        html: '<div style="background:#10b981; color:#fff; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 0 18px rgba(16,185,129,0.9); font-size:18px;">🚚</div>',
+        iconSize: [36, 36],
+        iconAnchor: [18, 18]
+    });
+
+    // Add Markers
+    const originMarker = L.marker([originLat, originLng], { icon: originIcon })
+        .addTo(map)
+        .bindPopup(`<strong>Origin Warehouse:</strong><br>{{ shipment.origin_warehouse.name }}<br>{{ shipment.origin_warehouse.city }}`);
+
+    const destMarker = L.marker([destLat, destLng], { icon: destIcon })
+        .addTo(map)
+        .bindPopup(`<strong>Destination:</strong><br>{{ shipment.destination_hub_or_consignee }}<br>{{ shipment.destination_city }}`);
+
+    // Route Polyline
+    const routeCoordinates = [
+        [originLat, originLng],
+        {% for cp in checkpoints %}
+            {% if cp.latitude and cp.longitude %}
+                [{{ cp.latitude }}, {{ cp.longitude }}],
+            {% endif %}
+        {% endfor %}
+        [destLat, destLng]
+    ];
+
+    const polyline = L.polyline(routeCoordinates, {
+        color: '#10b981',
+        weight: 4,
+        dashArray: '8, 8',
+        opacity: 0.85
+    }).addTo(map);
+
+    // Active Vehicle Marker position
+    let truckLat = originLat + (destLat - originLat) * progressRatio;
+    let truckLng = originLng + (destLng - originLng) * progressRatio;
+
+    {% if checkpoints.exists %}
+        {% with checkpoints.last as last_cp %}
+            {% if last_cp.latitude and last_cp.longitude %}
+                truckLat = {{ last_cp.latitude }};
+                truckLng = {{ last_cp.longitude }};
+            {% endif %}
+        {% endwith %}
+    {% endif %}
+
+    if (isDelivered) {
+        truckLat = destLat;
+        truckLng = destLng;
+    }
+
+    const truckMarker = L.marker([truckLat, truckLng], { icon: truckIcon })
+        .addTo(map)
+        .bindPopup(`<strong>Carrier:</strong> {{ shipment.vehicle.vehicle_number|default:"Dedicated Fleet" }}<br><strong>Status:</strong> {{ shipment.status }}`);
+
+    // Fit Bounds
+    const bounds = L.latLngBounds([
+        [originLat, originLng],
+        [destLat, destLng],
+        [truckLat, truckLng]
+    ]);
+    map.fitBounds(bounds, { padding: [50, 50] });
+});
+</script>
+{% endblock %}

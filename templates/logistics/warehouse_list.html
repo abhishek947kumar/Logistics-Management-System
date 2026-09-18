@@ -1,0 +1,108 @@
+{% extends 'logistics/base.html' %}
+
+{% block title %}Warehouses & Distribution Hubs - Logistics System{% endblock %}
+{% block page_heading %}Warehouse Management Facilities{% endblock %}
+{% block page_subheading %}Distribution centers, regional storage hubs, and capacity utilization{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: 2.2fr 1fr; gap: 28px;">
+    <!-- Warehouses List -->
+    <div class="glass-card">
+        <div class="card-header">
+            <h3>Registered Warehouses ({{ warehouses|length }})</h3>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Code & Hub Name</th>
+                        <th>City & Location</th>
+                        <th>Capacity</th>
+                        <th>Supervisor / Contact</th>
+                        <th>Current Stock</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for wh in warehouses %}
+                    <tr>
+                        <td>
+                            <strong style="color: #60a5fa;">{{ wh.code }}</strong><br>
+                            <span style="font-weight: 600;">{{ wh.name }}</span>
+                        </td>
+                        <td>
+                            <strong>{{ wh.city }}</strong><br>
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">{{ wh.location|truncatechars:35 }}</span>
+                        </td>
+                        <td>{{ wh.capacity }} pallets</td>
+                        <td>
+                            <strong>{{ wh.supervisor_name }}</strong><br>
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">{{ wh.contact_number }}</span>
+                        </td>
+                        <td>
+                            <span class="badge badge-available">{{ wh.total_goods_count }} Items ({{ wh.total_quantity }} Units)</span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 32px; color: var(--text-muted);">
+                            No warehouses registered yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Add Warehouse Form -->
+    <div class="glass-card">
+        <div class="card-header">
+            <h3>Register New Facility</h3>
+        </div>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label class="form-label" for="{{ form.name.id_for_label }}">Warehouse Name *</label>
+                {{ form.name }}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="{{ form.code.id_for_label }}">Warehouse Code *</label>
+                {{ form.code }}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="{{ form.city.id_for_label }}">City *</label>
+                {{ form.city }}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="{{ form.location.id_for_label }}">Street / Industrial Area *</label>
+                {{ form.location }}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="{{ form.capacity.id_for_label }}">Storage Capacity *</label>
+                {{ form.capacity }}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="{{ form.supervisor_name.id_for_label }}">Supervisor Name *</label>
+                {{ form.supervisor_name }}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="{{ form.contact_number.id_for_label }}">Contact Phone *</label>
+                {{ form.contact_number }}
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+                + Add Warehouse
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

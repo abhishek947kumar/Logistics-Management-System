@@ -1,0 +1,90 @@
+{% extends 'logistics/base.html' %}
+
+{% block title %}Record Goods Arrival - {{ shipment.tracking_number }}{% endblock %}
+{% block page_heading %}Confirm Destination Arrival: {{ shipment.tracking_number }}{% endblock %}
+{% block page_subheading %}Update arrival timestamp, record recipient signature, and finalize total transit duration calculation{% endblock %}
+
+{% block content %}
+<div style="max-width: 850px; margin: 0 auto;">
+    <!-- Consignment Header & Transit Elapsed Preview -->
+    <div class="transit-timer-box" style="margin-bottom: 24px;">
+        <div>
+            <span style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Origin to Destination</span>
+            <h3 style="font-size: 1.25rem; color: #fff; margin: 2px 0 6px;">
+                {{ shipment.origin_warehouse.name }} ({{ shipment.origin_warehouse.city }}) &rarr; {{ shipment.destination_city }}
+            </h3>
+            <p style="font-size: 0.82rem; color: var(--text-muted);">
+                Dispatched: <strong>{{ shipment.dispatch_time|date:"d M Y, H:i" }}</strong>
+            </p>
+        </div>
+        <div style="text-align: right;">
+            <div class="timer-digits">{{ transit_info.formatted }}</div>
+            <span style="font-size: 0.75rem; color: #93c5fd;">Current Elapsed Transit Period</span>
+        </div>
+    </div>
+
+    <!-- Arrival Confirmation Form -->
+    <div class="glass-card">
+        <div class="card-header">
+            <h3>Arrival Record & Goods Handover</h3>
+            <a href="{% url 'tracking_detail' shipment.tracking_number %}" class="btn btn-secondary btn-sm">← Back to Tracker</a>
+        </div>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-error">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label" for="{{ form.actual_arrival.id_for_label }}">Exact Arrival Date & Time *</label>
+                    {{ form.actual_arrival }}
+                    <span class="form-help">Timestamp at which vehicle and goods touched down at destination hub/consignee.</span>
+                    {% if form.actual_arrival.errors %}<span style="color: #f87171; font-size: 0.75rem;">{{ form.actual_arrival.errors }}</span>{% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="{{ form.delivery_condition.id_for_label }}">Physical Condition of Goods *</label>
+                    {{ form.delivery_condition }}
+                    {% if form.delivery_condition.errors %}<span style="color: #f87171; font-size: 0.75rem;">{{ form.delivery_condition.errors }}</span>{% endif %}
+                </div>
+
+                <div class="form-group full-width">
+                    <label class="form-label" for="{{ form.received_by_signature_name.id_for_label }}">Receiver Name & Acknowledgment Signature *</label>
+                    {{ form.received_by_signature_name }}
+                    <span class="form-help">Authorized consignee representative accepting delivery (e.g. Suresh Kumar - Hub Incharge).</span>
+                    {% if form.received_by_signature_name.errors %}<span style="color: #f87171; font-size: 0.75rem;">{{ form.received_by_signature_name.errors }}</span>{% endif %}
+                </div>
+
+                <div class="form-group full-width">
+                    <label class="form-label" for="{{ form.arrival_notes.id_for_label }}">Inspection Observations & Notes</label>
+                    {{ form.arrival_notes }}
+                    <span class="form-help">Seal verification numbers, barcode scan confirmation, or unloading dock notes.</span>
+                </div>
+            </div>
+
+            <!-- Goods in Consignment Review -->
+            <div style="background: rgba(0,0,0,0.25); border-radius: var(--radius-sm); padding: 16px; margin: 20px 0;">
+                <h4 style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px;">Consignment Goods Handover List</h4>
+                {% for item in shipment.items.all %}
+                <div style="display: flex; justify-content: space-between; font-size: 0.9rem; padding: 4px 0;">
+                    <span>{{ item.goods_item.name }} (SKU: {{ item.goods_item.sku }})</span>
+                    <strong>{{ item.quantity_shipped }} {{ item.goods_item.unit }}</strong>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 14px; margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--bg-card-border);">
+                <a href="{% url 'tracking_detail' shipment.tracking_number %}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-success" style="padding: 12px 28px;">
+                    ✅ Complete Handover & Finalize Delivery
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

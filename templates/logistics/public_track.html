@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if shipment %}Track Consignment {{ shipment.tracking_number }} - LogiTrack Pro{% else %}Public Consignment Tracking - LogiTrack Pro{% endif %}</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    
+    <!-- Leaflet CSS for Interactive Visual Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <style>
+        #route-map {
+            height: 380px;
+            width: 100%;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--bg-card-border);
+            margin-bottom: 24px;
+            z-index: 10;
+        }
+        .public-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 32px;
+            background: rgba(11, 17, 32, 0.95);
+            border-bottom: 1px solid var(--bg-card-border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .enquiry-card {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.9));
+            border: 1px solid rgba(59, 130, 246, 0.25);
+            border-radius: var(--radius-md);
+            padding: 24px;
+        }
+    </style>
+</head>
+<body style="background-color: var(--bg-main);">
+    <!-- Public Header -->
+    <header class="public-nav">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="brand-icon">📦</div>
+            <div>
+                <h1 style="font-size: 1.15rem; font-weight: 800; color: #fff;">LogiTrack Pro</h1>
+                <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Consignee Self-Service Portal</span>
+            </div>
+        </div>
+        <div style="display: flex; gap: 14px; align-items: center;">
+            <a href="{% url 'public_tracking_search' %}" style="color: var(--text-secondary); font-size: 0.88rem; font-weight: 600;">Track Another Consignment</a>
+            <a href="{% url 'login' %}" class="btn btn-secondary btn-sm">Staff Portal &rarr;</a>
+        </div>
+    </header>
+
+    <div style="max-width: 1180px; margin: 30px auto; padding: 0 20px;">
+        <!-- Search Banner if no shipment selected -->
+        {% if not shipment %}
+        <div class="glass-card" style="text-align: center; padding: 48px 24px; margin-bottom: 30px;">
+            <div style="font-size: 3.5rem; margin-bottom: 14px;">🚚</div>
+            <h2 style="font-size: 1.8rem; font-weight: 800; color: #fff; margin-bottom: 8px;">Track Your Consignment</h2>
+            <p style="color: var(--text-muted); font-size: 0.95rem; max-width: 550px; margin: 0 auto 28px;">
+                Enter your waybill or consignment tracking number to view real-time transit duration, highway route progress, and submit delivery queries.
+            </p>
+
+            <form method="get" action="{% url 'public_tracking_search' %}" style="display: flex; gap: 12px; max-width: 580px; margin: 0 auto;">
+                <input type="text" name="tracking_number" class="form-input" placeholder="e.g. LMS-260918-BOM781" style="padding: 14px 20px; font-size: 1.05rem;" required autofocus>
+                <button type="submit" class="btn btn-primary" style="padding: 14px 28px; font-size: 1rem;">Track</button>
+            </form>
+        </div>
+
+        <div class="glass-card">
+            <div class="card-header">
+                <h3>Live Freight Consignments</h3>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">Recent dispatches on route</span>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Tracking Number</th>
+                            <th>Route</th>
+                            <th>Departure</th>
+                            <th>Transit Duration</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in recent_shipments %}
+                        <tr>
+                            <td><strong style="color: #60a5fa; font-family: monospace;">{{ s.tracking_number }}</strong></td>
+                            <td>{{ s.origin_warehouse.city }} &rarr; {{ s.destination_city }}</td>
+                            <td style="font-size: 0.8rem; color: var(--text-muted);">{{ s.dispatch_time|date:"d M, H:i" }}</td>
+                            <td>
+                                <strong>{{ s.transit_duration_display }}</strong>
+                                {% if not s.is_delivered %}<span class="pulse-indicator" style="margin-left: 4px;"></span>{% endif %}
+                            </td>
+                            <td>
+                                {% if s.status == 'Dispatched' %}
+                                    <span class="badge badge-in-transit">🚚 In Transit</span>
+                                {% elif s.status == 'Delivered' %}
+                                    <span class="badge badge-delivered">✅ Delivered</span>
+                                {% else %}
+                                    <span class="badge badge-info">{{ s.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'public_tracking_detail' s.tracking_number %}" class="btn btn-primary btn-sm">Inspect Status &rarr;</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% else %}
+
+        <!-- Flash messages -->
+        {% if messages %}
+        <div class="alert-container">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }}">
+                <span>{{ message }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Live Transit Duration Banner -->
+        <div class="transit-timer-box">
+            <div>
+                <div style="display: flex; align-items: center; margin-bottom: 4px;">
+                    {% if shipment.is_delivered %}
+                        <span style="font-size: 1.2rem; margin-right: 8px;">✅</span>
+                        <strong style="color: #34d399; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                            Consignment Delivered to Destination
+                        </strong>
+                    {% else %}
+                        <span class="pulse-indicator"></span>
+                        <strong style="color: #60a5fa; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                            Consignment In Transit
+                        </strong>
+                    {% endif %}
+                </div>
+                <h2 style="font-size: 1.4rem; color: #fff; margin-top: 4px;">
+                    {{ shipment.origin_warehouse.city }} &nbsp;&rarr;&nbsp; {{ shipment.destination_city }}
+                </h2>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 2px;">
+                    Consignee: <strong>{{ shipment.recipient_name }}</strong> ({{ shipment.destination_hub_or_consignee }})
+                </p>
+            </div>
+
+            <div style="text-align: right;">
+                {% if shipment.is_delivered %}
+                    <div class="timer-digits" style="color: #34d399;">{{ shipment.transit_duration_display }}</div>
+                    <span style="font-size: 0.75rem; color: #a7f3d0;">Total Duration Elapsed</span>
+                {% else %}
+                    <div id="live-transit-timer" class="timer-digits" data-dispatch-time="{{ shipment.dispatch_time|date:'c' }}">
+                        {{ shipment.transit_duration_display }}
+                    </div>
+                    <span style="font-size: 0.75rem; color: #93c5fd;">Active Transportation Duration</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Interactive Visual Route Map (Leaflet.js) -->
+        <div class="glass-card">
+            <div class="card-header">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 1.2rem;">🗺️</span>
+                    <h3>Interactive Highway Route & Waypoints</h3>
+                </div>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">
+                    Showing route between {{ shipment.origin_warehouse.city }} and {{ shipment.destination_city }}
+                </span>
+            </div>
+
+            <div id="route-map"></div>
+
+            <!-- Route Summary Bar -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 16px; font-size: 0.85rem;">
+                <div style="background: rgba(0,0,0,0.25); padding: 12px 16px; border-radius: var(--radius-sm);">
+                    <span style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">Origin Warehouse</span>
+                    <p style="font-weight: 700; color: #fff; margin-top: 2px;">{{ shipment.origin_warehouse.name }}</p>
+                    <span style="font-size: 0.75rem; color: #94a3b8;">Dispatched: {{ shipment.dispatch_time|date:"d M, H:i" }}</span>
+                </div>
+                <div style="background: rgba(0,0,0,0.25); padding: 12px 16px; border-radius: var(--radius-sm);">
+                    <span style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">Assigned Carrier</span>
+                    <p style="font-weight: 700; color: #60a5fa; margin-top: 2px;">
+                        {{ shipment.vehicle.vehicle_number|default:"Third-Party Express Freight" }}
+                    </p>
+                    <span style="font-size: 0.75rem; color: #94a3b8;">Driver: {{ shipment.vehicle.driver_name|default:"Designated Fleet" }}</span>
+                </div>
+                <div style="background: rgba(0,0,0,0.25); padding: 12px 16px; border-radius: var(--radius-sm);">
+                    <span style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">Destination Terminal</span>
+                    <p style="font-weight: 700; color: #fff; margin-top: 2px;">{{ shipment.destination_city }}</p>
+                    <span style="font-size: 0.75rem; color: {% if shipment.is_delivered %}#34d399{% else %}#fbbf24{% endif %};">
+                        {% if shipment.is_delivered %}Arrived: {{ shipment.actual_arrival|date:"d M, H:i" }}{% else %}Est: {{ shipment.estimated_arrival|date:"d M, H:i"|default:"In Transit" }}{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2 Column: Checkpoints & Customer Enquiry Desk -->
+        <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 24px; margin-bottom: 40px;">
+            <!-- Checkpoints Timeline -->
+            <div class="glass-card" style="margin-bottom: 0;">
+                <div class="card-header">
+                    <h3>Milestones & Transit Checkpoints</h3>
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">{{ checkpoints|length }} waypoints passed</span>
+                </div>
+
+                <div class="timeline">
+                    {% for cp in checkpoints %}
+                    <div class="timeline-item">
+                        <div class="timeline-dot completed">✓</div>
+                        <div class="timeline-content">
+                            <div class="timeline-header">
+                                <span class="timeline-location">{{ cp.location_name }}</span>
+                                <span class="timeline-time">{{ cp.timestamp|date:"d M Y, H:i" }}</span>
+                            </div>
+                            <div class="timeline-note">{{ cp.status_note }}</div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p style="color: var(--text-muted); padding: 20px;">No transit checkpoints recorded yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Customer Enquiry Form (Resolves PDF Limitation) -->
+            <div class="enquiry-card">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                    <span style="font-size: 1.3rem;">💬</span>
+                    <h3 style="font-size: 1.15rem; color: #fff;">Have an Enquiry?</h3>
+                </div>
+                <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 18px;">
+                    Need delivery reschedule or have package inquiries? Submit a ticket directly to the logistics hub desk.
+                </p>
+
+                <form method="post" action="{% url 'submit_enquiry' shipment.tracking_number %}">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label class="form-label" style="font-size: 0.8rem;">Your Full Name *</label>
+                        {{ enquiry_form.customer_name }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" style="font-size: 0.8rem;">Contact Phone *</label>
+                        {{ enquiry_form.customer_phone }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" style="font-size: 0.8rem;">Email Address</label>
+                        {{ enquiry_form.customer_email }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" style="font-size: 0.8rem;">Enquiry Subject *</label>
+                        {{ enquiry_form.subject }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" style="font-size: 0.8rem;">Message Details *</label>
+                        {{ enquiry_form.message }}
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px; padding: 11px;">
+                        Submit Delivery Enquiry
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        {% endif %}
+    </div>
+
+    <!-- Scripts -->
+    <script src="{% static 'js/main.js' %}"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    {% if shipment %}
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const originLat = {{ shipment.origin_warehouse.latitude }};
+            const originLng = {{ shipment.origin_warehouse.longitude }};
+            const destLat = {{ shipment.dest_latitude }};
+            const destLng = {{ shipment.dest_longitude }};
+            const isDelivered = {{ shipment.is_delivered|yesno:"true,false" }};
+            const progressRatio = {{ shipment.progress_percentage }} / 100;
+
+            // Initialize Map
+            const map = L.map('route-map').setView([originLat, originLng], 6);
+
+            // Dark CartoDB Tiles
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+                maxZoom: 19
+            }).addTo(map);
+
+            // Custom Marker Icons
+            const originIcon = L.divIcon({
+                className: 'custom-map-icon',
+                html: '<div style="background:#10b981; color:#fff; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 0 12px rgba(16,185,129,0.7); font-size:16px;">🏭</div>',
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
+            });
+
+            const destIcon = L.divIcon({
+                className: 'custom-map-icon',
+                html: '<div style="background:#ef4444; color:#fff; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 0 12px rgba(239,68,68,0.7); font-size:16px;">🏁</div>',
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
+            });
+
+            const truckIcon = L.divIcon({
+                className: 'custom-map-icon',
+                html: '<div style="background:#3b82f6; color:#fff; width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 0 15px rgba(59,130,246,0.9); font-size:18px;">🚚</div>',
+                iconSize: [34, 34],
+                iconAnchor: [17, 17]
+            });
+
+            // Origin Marker
+            L.marker([originLat, originLng], { icon: originIcon })
+                .addTo(map)
+                .bindPopup("<b>Origin: {{ shipment.origin_warehouse.name }}</b><br>{{ shipment.origin_warehouse.city }}<br>Dispatched: {{ shipment.dispatch_time|date:'d-M H:i' }}");
+
+            // Destination Marker
+            L.marker([destLat, destLng], { icon: destIcon })
+                .addTo(map)
+                .bindPopup("<b>Destination: {{ shipment.destination_city }}</b><br>Consignee: {{ shipment.recipient_name }}");
+
+            // Draw Route Polyline
+            const latlngs = [
+                [originLat, originLng],
+                [destLat, destLng]
+            ];
+            const polyline = L.polyline(latlngs, {
+                color: '#3b82f6',
+                weight: 4,
+                opacity: 0.8,
+                dashArray: isDelivered ? null : '8, 8'
+            }).addTo(map);
+
+            // Calculate current Vehicle position along the line
+            const currentLat = originLat + (destLat - originLat) * progressRatio;
+            const currentLng = originLng + (destLng - originLng) * progressRatio;
+
+            L.marker([currentLat, currentLng], { icon: truckIcon })
+                .addTo(map)
+                .bindPopup("<b>Vehicle: {{ shipment.vehicle.vehicle_number|default:'Transit Freight' }}</b><br>Transit Status: {{ shipment.status }}<br>Progress: {{ shipment.progress_percentage }}%");
+
+            // Fit map bounds to view all route points
+            map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+        });
+    </script>
+    {% endif %}
+</body>
+</html>

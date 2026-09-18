@@ -1,0 +1,299 @@
+{% extends 'logistics/base.html' %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<style>
+    #admin-route-map {
+        height: 360px;
+        width: 100%;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--bg-card-border);
+        margin-bottom: 24px;
+        z-index: 10;
+    }
+</style>
+{% endblock %}
+
+{% block title %}Tracking {{ shipment.tracking_number }} - Logistics Management System{% endblock %}
+{% block page_heading %}Consignment Tracker: {{ shipment.tracking_number }}{% endblock %}
+{% block page_subheading %}Detailed transit duration analytics, vehicle routing, and waypoint checkpoints{% endblock %}
+
+{% block content %}
+<!-- Live Transit Duration Banner -->
+<div class="transit-timer-box">
+    <div>
+        <div style="display: flex; align-items: center; margin-bottom: 4px;">
+            {% if shipment.is_delivered %}
+                <span style="font-size: 1.1rem; margin-right: 8px;">🏁</span>
+                <strong style="color: #34d399; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                    Final Transportation Duration (Completed)
+                </strong>
+            {% else %}
+                <span class="pulse-indicator"></span>
+                <strong style="color: #60a5fa; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                    Active Transportation Duration (In Transit)
+                </strong>
+            {% endif %}
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.85rem;">
+            Dispatched on {{ shipment.dispatch_time|date:"d M Y at H:i" }} from {{ shipment.origin_warehouse.name }}
+            {% if shipment.is_delivered %}
+                &bull; Arrived on {{ shipment.actual_arrival|date:"d M Y at H:i" }}
+            {% endif %}
+        </p>
+    </div>
+
+    <div style="text-align: right;">
+        {% if shipment.is_delivered %}
+            <div class="timer-digits" style="color: #34d399;">{{ shipment.transit_duration_display }}</div>
+            <span style="font-size: 0.75rem; color: #a7f3d0;">Total Elapsed Time</span>
+        {% else %}
+            <div id="live-transit-timer" class="timer-digits" data-dispatch-time="{{ shipment.dispatch_time|date:'c' }}">
+                {{ shipment.transit_duration_display }}
+            </div>
+            <span style="font-size: 0.75rem; color: #93c5fd;">Real-time Elapsed Counter</span>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Visual Route Progress Card with Interactive Map -->
+<div class="glass-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <div>
+            <span style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Route Overview</span>
+            <h3 style="font-size: 1.4rem; color: #fff; margin-top: 2px;">
+                {{ shipment.origin_warehouse.city }} &nbsp;&rarr;&nbsp; {{ shipment.destination_city }}
+            </h3>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <a href="{% url 'public_tracking_detail' shipment.tracking_number %}" target="_blank" class="btn btn-secondary" title="View Customer Portal">
+                🌐 Public View
+            </a>
+            {% if shipment.status != 'Delivered' %}
+                <a href="{% url 'goods_arrival' shipment.id %}" class="btn btn-success">
+                    ✅ Record Destination Arrival
+                </a>
+            {% endif %}
+            <a href="{% url 'shipment_invoice' shipment.id %}" class="btn btn-secondary">
+                📄 Print Consignment Challan
+            </a>
+        </div>
+    </div>
+
+    <!-- Leaflet Interactive Map -->
+    <div id="admin-route-map"></div>
+
+    <!-- Route Path Progress -->
+    <div style="background: rgba(0, 0, 0, 0.25); border: 1px solid var(--bg-card-border); border-radius: var(--radius-md); padding: 24px; margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; position: relative;">
+            <!-- Step 1: Origin -->
+            <div style="text-align: left; flex: 1;">
+                <div style="display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: #10b981; margin-bottom: 8px;"></div>
+                <div style="font-size: 0.75rem; color: var(--success); font-weight: 700; text-transform: uppercase;">Origin Warehouse</div>
+                <strong style="font-size: 1rem; color: #fff;">{{ shipment.origin_warehouse.name }}</strong>
+                <p style="font-size: 0.78rem; color: var(--text-muted);">{{ shipment.origin_warehouse.city }}</p>
+                <span style="font-size: 0.72rem; color: #94a3b8;">{{ shipment.dispatch_time|date:"d M, H:i" }}</span>
+            </div>
+
+            <!-- Step 2: In Transit -->
+            <div style="text-align: center; flex: 1;">
+                <div style="display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: {% if shipment.status == 'Dispatched' %}#f59e0b{% else %}#10b981{% endif %}; margin-bottom: 8px;"></div>
+                <div style="font-size: 0.75rem; color: {% if shipment.status == 'Dispatched' %}#fbbf24{% else %}#34d399{% endif %}; font-weight: 700; text-transform: uppercase;">Highway Transit</div>
+                <strong style="font-size: 1rem; color: #fff;">
+                    {% if shipment.vehicle %}{{ shipment.vehicle.vehicle_number }}{% else %}Consolidated Freight{% endif %}
+                </strong>
+                <p style="font-size: 0.78rem; color: var(--text-muted);">
+                    {% if shipment.vehicle %}Driver: {{ shipment.vehicle.driver_name }}{% else %}Commercial Carrier{% endif %}
+                </p>
+                <span style="font-size: 0.72rem; color: #94a3b8;">{{ checkpoints|length }} checkpoints logged</span>
+            </div>
+
+            <!-- Step 3: Destination -->
+            <div style="text-align: right; flex: 1;">
+                <div style="display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: {% if shipment.is_delivered %}#10b981{% else %}#64748b{% endif %}; margin-bottom: 8px;"></div>
+                <div style="font-size: 0.75rem; color: {% if shipment.is_delivered %}#34d399{% else %}#64748b{% endif %}; font-weight: 700; text-transform: uppercase;">Destination Arrival</div>
+                <strong style="font-size: 1rem; color: #fff;">{{ shipment.destination_city }} Hub</strong>
+                <p style="font-size: 0.78rem; color: var(--text-muted);">To: {{ shipment.recipient_name }}</p>
+                <span style="font-size: 0.72rem; color: {% if shipment.is_delivered %}#34d399{% else %}#64748b{% endif %};">
+                    {% if shipment.is_delivered %}
+                        Arrived: {{ shipment.actual_arrival|date:"d M, H:i" }}
+                    {% else %}
+                        Pending Arrival
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2 Column Details Grid -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--bg-card-border); border-radius: var(--radius-sm); padding: 18px;">
+            <h4 style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 12px;">Consignee & Delivery Information</h4>
+            <p style="margin-bottom: 6px;"><strong>Recipient Name:</strong> {{ shipment.recipient_name }}</p>
+            <p style="margin-bottom: 6px;"><strong>Phone:</strong> {{ shipment.recipient_phone }}</p>
+            <p style="margin-bottom: 6px;"><strong>Facility/Hub:</strong> {{ shipment.destination_hub_or_consignee }}</p>
+            <p style="margin-bottom: 6px;"><strong>Destination Address:</strong> {{ shipment.destination_address }}</p>
+            {% if shipment.is_delivered %}
+                <p style="margin-top: 10px; color: #34d399;"><strong>Receiver Signature:</strong> {{ shipment.received_by_signature_name }}</p>
+                <p style="color: #34d399;"><strong>Condition:</strong> {{ shipment.get_delivery_condition_display }}</p>
+            {% endif %}
+        </div>
+
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--bg-card-border); border-radius: var(--radius-sm); padding: 18px;">
+            <h4 style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 12px;">Consignment Goods Carried</h4>
+            {% for item in items %}
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px; margin-bottom: 8px;">
+                <div>
+                    <strong>{{ item.goods_item.name }}</strong><br>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">SKU: {{ item.goods_item.sku }} | {{ item.goods_item.category }}</span>
+                </div>
+                <div style="text-align: right;">
+                    <strong style="color: #60a5fa;">{{ item.quantity_shipped }} {{ item.goods_item.unit }}</strong><br>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">{{ item.goods_item.weight_kg }} kg/u</span>
+                </div>
+            </div>
+            {% endfor %}
+            {% if shipment.remarks %}
+                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 10px;">
+                    <strong>Instructions:</strong> {{ shipment.remarks }}
+                </p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Checkpoints Timeline & Add Checkpoint -->
+<div style="display: grid; grid-template-columns: 2fr 1.2fr; gap: 24px;">
+    <!-- Transit Checkpoint Timeline -->
+    <div class="glass-card">
+        <div class="card-header">
+            <h3>Transit Checkpoints & Milestones</h3>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Audit log of locations passed</span>
+        </div>
+
+        <div class="timeline">
+            {% for cp in checkpoints %}
+            <div class="timeline-item">
+                <div class="timeline-dot completed">✓</div>
+                <div class="timeline-content">
+                    <div class="timeline-header">
+                        <span class="timeline-location">{{ cp.location_name }}</span>
+                        <span class="timeline-time">{{ cp.timestamp|date:"d M Y, H:i" }}</span>
+                    </div>
+                    <div class="timeline-note">{{ cp.status_note }}</div>
+                </div>
+            </div>
+            {% empty %}
+            <p style="color: var(--text-muted); padding: 16px;">No checkpoints recorded yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Add Checkpoint Form -->
+    <div class="glass-card">
+        <div class="card-header">
+            <h3>Log Transit Checkpoint</h3>
+        </div>
+
+        {% if shipment.status == 'Delivered' %}
+            <div style="text-align: center; padding: 24px; color: #34d399;">
+                <div style="font-size: 2.5rem; margin-bottom: 8px;">✅</div>
+                <h4>Goods Arrived at Destination</h4>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 6px;">
+                    This shipment has concluded. No further in-transit checkpoints can be recorded.
+                </p>
+            </div>
+        {% else %}
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="add_checkpoint" value="1">
+
+                <div class="form-group">
+                    <label class="form-label" for="{{ checkpoint_form.location_name.id_for_label }}">Waypoint / Toll / City *</label>
+                    {{ checkpoint_form.location_name }}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="{{ checkpoint_form.status_note.id_for_label }}">Status Note / Remarks *</label>
+                    {{ checkpoint_form.status_note }}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="{{ checkpoint_form.timestamp.id_for_label }}">Checkpoint Timestamp *</label>
+                    {{ checkpoint_form.timestamp }}
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+                    + Record Waypoint
+                </button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const originLat = {{ shipment.origin_warehouse.latitude }};
+        const originLng = {{ shipment.origin_warehouse.longitude }};
+        const destLat = {{ shipment.dest_latitude }};
+        const destLng = {{ shipment.dest_longitude }};
+        const isDelivered = {{ shipment.is_delivered|yesno:"true,false" }};
+        const progressRatio = {{ shipment.progress_percentage }} / 100;
+
+        const map = L.map('admin-route-map').setView([originLat, originLng], 6);
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+            maxZoom: 19
+        }).addTo(map);
+
+        const originIcon = L.divIcon({
+            className: 'custom-map-icon',
+            html: '<div style="background:#10b981; color:#fff; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:15px; box-shadow:0 0 10px rgba(16,185,129,0.7);">🏭</div>',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+        });
+
+        const destIcon = L.divIcon({
+            className: 'custom-map-icon',
+            html: '<div style="background:#ef4444; color:#fff; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:15px; box-shadow:0 0 10px rgba(239,68,68,0.7);">🏁</div>',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+        });
+
+        const truckIcon = L.divIcon({
+            className: 'custom-map-icon',
+            html: '<div style="background:#3b82f6; color:#fff; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; box-shadow:0 0 12px rgba(59,130,246,0.8);">🚚</div>',
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
+        });
+
+        L.marker([originLat, originLng], { icon: originIcon })
+            .addTo(map)
+            .bindPopup("<b>{{ shipment.origin_warehouse.name }}</b><br>{{ shipment.origin_warehouse.city }}");
+
+        L.marker([destLat, destLng], { icon: destIcon })
+            .addTo(map)
+            .bindPopup("<b>Destination: {{ shipment.destination_city }}</b><br>{{ shipment.recipient_name }}");
+
+        const latlngs = [[originLat, originLng], [destLat, destLng]];
+        const polyline = L.polyline(latlngs, {
+            color: '#3b82f6',
+            weight: 4,
+            dashArray: isDelivered ? null : '6, 6'
+        }).addTo(map);
+
+        const currentLat = originLat + (destLat - originLat) * progressRatio;
+        const currentLng = originLng + (destLng - originLng) * progressRatio;
+
+        L.marker([currentLat, currentLng], { icon: truckIcon })
+            .addTo(map)
+            .bindPopup("<b>Current Carrier: {{ shipment.vehicle.vehicle_number|default:'Transit Vehicle' }}</b><br>Progress: {{ shipment.progress_percentage }}%");
+
+        map.fitBounds(polyline.getBounds(), { padding: [40, 40] });
+    });
+</script>
+{% endblock %}

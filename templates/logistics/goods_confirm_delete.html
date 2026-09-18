@@ -1,0 +1,35 @@
+{% extends 'logistics/base.html' %}
+
+{% block title %}Remove Goods - Logistics Management System{% endblock %}
+{% block page_heading %}Remove Goods from System{% endblock %}
+{% block page_subheading %}Confirm removal of inventory record{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 40px auto;">
+    <div class="glass-card" style="border-color: rgba(239, 68, 68, 0.3);">
+        <div class="card-header" style="border-bottom-color: rgba(239, 68, 68, 0.2);">
+            <h3 style="color: #f87171;">⚠️ Confirm Removal of Goods</h3>
+        </div>
+
+        <p style="color: var(--text-primary); margin-bottom: 20px; font-size: 1rem;">
+            Are you sure you want to remove the following goods item from the warehouse system?
+        </p>
+
+        <div style="background: rgba(0, 0, 0, 0.3); border-radius: var(--radius-sm); padding: 18px; margin-bottom: 24px;">
+            <p><strong>Item Name:</strong> {{ goods_item.name }}</p>
+            <p><strong>SKU:</strong> <code style="color: #60a5fa;">{{ goods_item.sku }}</code></p>
+            <p><strong>Quantity:</strong> {{ goods_item.quantity }} {{ goods_item.unit }}</p>
+            <p><strong>Warehouse:</strong> {{ goods_item.warehouse.name|default:"Unallocated" }}</p>
+            <p><strong>Current Status:</strong> {{ goods_item.status }}</p>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            <div style="display: flex; justify-content: flex-end; gap: 14px;">
+                <a href="{% url 'goods_list' %}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-danger">Confirm Delete</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logistics Provider Login - LogiTrack Pro</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: radial-gradient(circle at top, #1e3a8a 0%, #0b1329 50%, #030712 100%);
+            padding: 24px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 460px;
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(59, 130, 246, 0.25);
+            border-radius: 20px;
+            padding: 44px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 35px rgba(37, 99, 235, 0.2);
+            position: relative;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .login-icon {
+            width: 68px;
+            height: 68px;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin: 0 auto 18px;
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .portal-badge {
+            display: inline-block;
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #60a5fa;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 9999px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 8px;
+        }
+
+        .demo-box {
+            background: rgba(59, 130, 246, 0.08);
+            border: 1px dashed rgba(59, 130, 246, 0.35);
+            border-radius: 10px;
+            padding: 14px 16px;
+            font-size: 0.82rem;
+            color: #93c5fd;
+            margin-top: 24px;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .form-nav-links {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 24px;
+            font-size: 0.85rem;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .form-nav-links a {
+            color: #94a3b8;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .form-nav-links a:hover {
+            color: #60a5fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="login-header">
+            <div class="login-icon">🚚</div>
+            <div class="portal-badge">Logistics Service Provider</div>
+            <h2 style="font-size: 1.65rem; font-weight: 800; color: #fff; letter-spacing: -0.02em;">Provider Command Center</h2>
+            <p style="color: #94a3b8; font-size: 0.88rem; margin-top: 6px;">Sign in to access fleet, warehouse & dispatch controls</p>
+        </div>
+
+        {% if messages %}
+        <div style="margin-bottom: 20px;">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }}">
+                <span>{{ message }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post" action="{% url 'provider_login' %}">
+            {% csrf_token %}
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label class="form-label" for="id_username">Provider Username / Admin ID</label>
+                <input type="text" name="username" id="id_username" class="form-input" placeholder="e.g. provider or admin" required autofocus>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 24px;">
+                <label class="form-label" for="id_password">Password</label>
+                <input type="password" name="password" id="id_password" class="form-input" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 13px; font-weight: 700; font-size: 0.95rem; background: linear-gradient(135deg, #2563eb, #1d4ed8);">
+                Sign In to Provider Portal →
+            </button>
+        </form>
+
+        <div style="margin-top: 16px; text-align: center;">
+            <span style="font-size: 0.85rem; color: #94a3b8;">New Logistics Carrier / Dealer? </span>
+            <a href="{% url 'provider_register' %}" style="color: #60a5fa; font-weight: 600; text-decoration: none; font-size: 0.85rem;">Register Your Company Here</a>
+        </div>
+
+        <div class="demo-box">
+            🔑 <strong>Demo Provider Accounts:</strong><br>
+            Username: <code style="color:#fff; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;">provider</code> &nbsp;|&nbsp; Password: <code style="color:#fff; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;">provider123</code><br>
+            <span style="font-size: 0.75rem; color: #64748b;">(Or Superadmin: <code>admin</code> / <code>admin123</code>)</span>
+        </div>
+
+        <div class="form-nav-links">
+            <a href="{% url 'portal_select' %}">← Switch Portal</a>
+            <a href="{% url 'consumer_login' %}">Are you a Client / Consignee? ↗</a>
+        </div>
+    </div>
+</body>
+</html>

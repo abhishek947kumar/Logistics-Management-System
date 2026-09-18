@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consumer Client Registration - LogiTrack Pro</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: radial-gradient(circle at top, #064e3b 0%, #062319 50%, #030712 100%);
+            padding: 32px 20px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .reg-card {
+            width: 100%;
+            max-width: 640px;
+            background: rgba(17, 24, 39, 0.88);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 35px rgba(16, 185, 129, 0.2);
+        }
+
+        .reg-header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .portal-badge {
+            display: inline-block;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #34d399;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 9999px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 8px;
+        }
+
+        .form-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 600px) {
+            .form-grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-nav-links {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 24px;
+            font-size: 0.85rem;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .form-nav-links a {
+            color: #94a3b8;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .form-nav-links a:hover {
+            color: #34d399;
+        }
+    </style>
+</head>
+<body>
+    <div class="reg-card">
+        <div class="reg-header">
+            <div class="portal-badge">Consignee & Client Registration</div>
+            <h2 style="font-size: 1.7rem; font-weight: 800; color: #fff; letter-spacing: -0.02em;">Register Consignee Account</h2>
+            <p style="color: #94a3b8; font-size: 0.88rem; margin-top: 6px;">Sign up to track your inbound consignments and place booking requests</p>
+        </div>
+
+        {% if form.errors %}
+        <div class="alert alert-error" style="margin-bottom: 20px;">
+            <ul style="margin: 0; padding-left: 20px;">
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <form method="post" action="{% url 'consumer_register' %}">
+            {% csrf_token %}
+
+            <div class="form-grid-2">
+                <div class="form-group">
+                    <label class="form-label" for="id_username">Desired Username *</label>
+                    {{ form.username }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="id_full_name">Company / Client Name *</label>
+                    {{ form.full_name }}
+                </div>
+            </div>
+
+            <div class="form-grid-2" style="margin-top: 14px;">
+                <div class="form-group">
+                    <label class="form-label" for="id_email">Official Email *</label>
+                    {{ form.email }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="id_phone">Contact Phone Number *</label>
+                    {{ form.phone }}
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 14px;">
+                <label class="form-label" for="id_city">Primary City / Hub Location *</label>
+                {{ form.city }}
+            </div>
+
+            <div class="form-grid-2" style="margin-top: 14px;">
+                <div class="form-group">
+                    <label class="form-label" for="id_password">Password *</label>
+                    {{ form.password }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="id_confirm_password">Confirm Password *</label>
+                    {{ form.confirm_password }}
+                </div>
+            </div>
+
+            <button type="submit" class="btn" style="width: 100%; margin-top: 24px; padding: 13px; font-weight: 700; font-size: 0.95rem; background: linear-gradient(135deg, #059669, #047857); color: #fff; box-shadow: 0 4px 14px rgba(5, 150, 105, 0.4);">
+                Complete Registration & Sign In →
+            </button>
+        </form>
+
+        <div class="form-nav-links">
+            <a href="{% url 'consumer_login' %}">Already have an account? Sign In</a>
+            <a href="{% url 'portal_select' %}">← Portal Gateway</a>
+        </div>
+    </div>
+</body>
+</html>

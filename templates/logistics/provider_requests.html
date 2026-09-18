@@ -1,0 +1,104 @@
+{% extends 'logistics/base.html' %}
+
+{% block title %}Client Booking Requests | LogiTrack Pro{% endblock %}
+{% block page_heading %}Client Booking Requests Inbox{% endblock %}
+{% block page_subheading %}Review and approve consignment booking orders submitted by consumers and client businesses{% endblock %}
+
+{% block content %}
+<div class="glass-card" style="margin-bottom: 24px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <a href="{% url 'provider_requests' %}" class="btn {% if not selected_status %}btn-primary{% else %}btn-secondary{% endif %} btn-sm">
+                All Requests ({{ requests.count }})
+            </a>
+            <a href="{% url 'provider_requests' %}?status=Pending" class="btn {% if selected_status == 'Pending' %}btn-primary{% else %}btn-secondary{% endif %} btn-sm">
+                ⏳ Pending Review
+            </a>
+            <a href="{% url 'provider_requests' %}?status=Approved" class="btn {% if selected_status == 'Approved' %}btn-primary{% else %}btn-secondary{% endif %} btn-sm">
+                ✅ Approved & Dispatched
+            </a>
+            <a href="{% url 'provider_requests' %}?status=Rejected" class="btn {% if selected_status == 'Rejected' %}btn-primary{% else %}btn-secondary{% endif %} btn-sm">
+                ❌ Rejected
+            </a>
+        </div>
+        <div style="font-size: 0.85rem; color: #94a3b8;">
+            Synchronized with Consumer Client Accounts
+        </div>
+    </div>
+</div>
+
+<div class="glass-card">
+    <div class="card-header">
+        <h3>Client Booking Queue</h3>
+        <span style="font-size: 0.8rem; color: var(--text-muted);">Real-time inbound booking orders</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Request ID</th>
+                    <th>Client / Consignee</th>
+                    <th>Cargo Description</th>
+                    <th>Quantity / Unit</th>
+                    <th>Route (From ➔ To)</th>
+                    <th>Submitted</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for req in requests %}
+                <tr>
+                    <td><strong>#REQ-{{ req.id }}</strong></td>
+                    <td>
+                        <strong style="color: #60a5fa;">{{ req.consumer.profile.company_name|default:req.consumer.username }}</strong>
+                        <div style="font-size: 0.75rem; color: #94a3b8;">
+                            User: {{ req.consumer.username }} &bull; {{ req.consumer.profile.phone|default:"No phone" }}
+                        </div>
+                    </td>
+                    <td>
+                        <strong>{{ req.goods_name }}</strong>
+                        <div style="font-size: 0.75rem; color: #94a3b8;">{{ req.get_category_display }}</div>
+                    </td>
+                    <td>{{ req.quantity }} {{ req.unit }}</td>
+                    <td>
+                        <span>{{ req.origin_city }} ➔ <strong>{{ req.destination_city }}</strong></span>
+                    </td>
+                    <td style="font-size: 0.8rem; color: #94a3b8;">{{ req.created_at|date:"M d, H:i" }}</td>
+                    <td>
+                        {% if req.status == 'Approved' %}
+                            <span class="badge badge-success">Approved</span>
+                        {% elif req.status == 'Rejected' %}
+                            <span class="badge badge-danger">Rejected</span>
+                        {% else %}
+                            <span class="badge badge-warning">Pending Review</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if req.status == 'Pending' %}
+                            <a href="{% url 'provider_request_approve' req.id %}" class="btn btn-primary btn-sm" style="padding: 6px 14px;">
+                                Review & Dispatch →
+                            </a>
+                        {% elif req.shipment %}
+                            <a href="{% url 'tracking_detail' req.shipment.tracking_number %}" class="btn btn-secondary btn-sm" style="padding: 6px 12px; font-family: monospace;">
+                                📍 {{ req.shipment.tracking_number }}
+                            </a>
+                        {% else %}
+                            <span style="color: #64748b; font-size: 0.8rem;">Closed</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 40px; color: #64748b;">
+                        <div style="font-size: 32px; margin-bottom: 8px;">📥</div>
+                        No booking requests found matching the current filter.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

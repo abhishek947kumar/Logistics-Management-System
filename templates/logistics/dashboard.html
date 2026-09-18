@@ -1,0 +1,233 @@
+{% extends 'logistics/base.html' %}
+
+{% block title %}Admin Dashboard - Logistics Management System{% endblock %}
+{% block page_heading %}Logistics Command Center{% endblock %}
+{% block page_subheading %}Warehouse operations, transit durations & inventory movement{% endblock %}
+
+{% block content %}
+<!-- KPI Cards Grid -->
+<div class="kpi-grid">
+    <div class="kpi-card blue">
+        <div class="kpi-info">
+            <h4>Available Stock</h4>
+            <div class="kpi-number">{{ total_goods_qty }}</div>
+            <div class="kpi-subtext">{{ total_goods_items }} distinct catalog items</div>
+        </div>
+        <div class="kpi-icon">📦</div>
+    </div>
+
+    <div class="kpi-card amber">
+        <div class="kpi-info">
+            <h4>In-Transit Consignments</h4>
+            <div class="kpi-number">{{ active_shipments_count }}</div>
+            <div class="kpi-subtext"><span class="pulse-indicator"></span>Tracking live transit periods</div>
+        </div>
+        <div class="kpi-icon">🚚</div>
+    </div>
+
+    <div class="kpi-card green">
+        <div class="kpi-info">
+            <h4>Delivered Goods</h4>
+            <div class="kpi-number">{{ delivered_shipments_count }}</div>
+            <div class="kpi-subtext">Arrival timestamps logged</div>
+        </div>
+        <div class="kpi-icon">✅</div>
+    </div>
+
+    <div class="kpi-card purple">
+        <div class="kpi-info">
+            <h4>Active Hubs & Fleet</h4>
+            <div class="kpi-number">{{ total_warehouses }} / {{ active_vehicles }}</div>
+            <div class="kpi-subtext">{{ total_warehouses }} Warehouses | {{ active_vehicles }} On Route</div>
+        </div>
+        <div class="kpi-icon">🏭</div>
+    </div>
+</div>
+
+<!-- Active In-Transit & Recent Shipments -->
+<div class="glass-card">
+    <div class="card-header">
+        <div>
+            <h3>Active Shipments & Transit Durations</h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
+                Monitoring transit periods between origin hubs and delivery destinations
+            </p>
+        </div>
+        <div class="card-actions">
+            <a href="{% url 'shipment_dispatch' %}" class="btn btn-primary btn-sm">+ New Dispatch</a>
+            <a href="{% url 'shipment_list' %}" class="btn btn-secondary btn-sm">View All Shipments</a>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Tracking No</th>
+                    <th>Origin Hub</th>
+                    <th>Destination</th>
+                    <th>Consignment Details</th>
+                    <th>Vehicle & Driver</th>
+                    <th>Transit Duration</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for shipment in recent_shipments %}
+                <tr>
+                    <td>
+                        <strong style="color: #60a5fa;">{{ shipment.tracking_number }}</strong><br>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">{{ shipment.dispatch_time|date:"d M, H:i" }}</span>
+                    </td>
+                    <td>
+                        <strong>{{ shipment.origin_warehouse.name }}</strong><br>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">{{ shipment.origin_warehouse.city }}</span>
+                    </td>
+                    <td>
+                        <strong>{{ shipment.destination_city }}</strong><br>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">To: {{ shipment.recipient_name }}</span>
+                    </td>
+                    <td>
+                        {% for item in shipment.items.all %}
+                            <span style="font-weight: 500;">{{ item.quantity_shipped }}x {{ item.goods_item.name }}</span><br>
+                        {% empty %}
+                            <span style="color: var(--text-muted);">Cargo items</span>
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% if shipment.vehicle %}
+                            <code>{{ shipment.vehicle.vehicle_number }}</code><br>
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">{{ shipment.vehicle.driver_name }} ({{ shipment.vehicle.driver_phone }})</span>
+                        {% else %}
+                            <span style="color: var(--text-muted);">Unassigned</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span style="font-weight: 700; color: {% if shipment.is_delivered %}#34d399{% else %}#60a5fa{% endif %};">
+                            {{ shipment.transit_duration_display }}
+                        </span>
+                        {% if not shipment.is_delivered %}
+                            <span class="pulse-indicator" style="margin-left: 4px;" title="Transit duration actively running"></span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if shipment.status == 'Dispatched' %}
+                            <span class="badge badge-in-transit">🚚 In Transit</span>
+                        {% elif shipment.status == 'Delivered' %}
+                            <span class="badge badge-delivered">✅ Delivered</span>
+                        {% else %}
+                            <span class="badge badge-info">{{ shipment.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 6px;">
+                            <a href="{% url 'tracking_detail' shipment.tracking_number %}" class="btn btn-secondary btn-sm" title="Track Timeline">📍</a>
+                            {% if shipment.status != 'Delivered' %}
+                                <a href="{% url 'goods_arrival' shipment.id %}" class="btn btn-success btn-sm" title="Record Goods Arrival">Arrived</a>
+                            {% endif %}
+                            <a href="{% url 'shipment_invoice' shipment.id %}" class="btn btn-secondary btn-sm" title="Print Challan">📄</a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 32px; color: var(--text-muted);">
+                        No shipments recorded yet. Click <strong>+ New Dispatch</strong> to start tracking goods movement.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Secondary Section: Inventory Log & Quick Actions -->
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+    <!-- Warehouse Activity Log -->
+    <div class="glass-card" style="margin-bottom: 0;">
+        <div class="card-header">
+            <h3>Recent Warehouse Inventory Operations</h3>
+            <a href="{% url 'goods_list' %}" class="btn btn-secondary btn-sm">Inventory Catalog</a>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Operation</th>
+                        <th>Goods Item</th>
+                        <th>Warehouse</th>
+                        <th>Quantity</th>
+                        <th>Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in recent_logs %}
+                    <tr>
+                        <td>
+                            {% if log.action_type == 'ADDED' %}
+                                <span class="badge badge-success">Stock In</span>
+                            {% elif log.action_type == 'ISSUED' %}
+                                <span class="badge badge-warning">Stock Out / Transit</span>
+                            {% elif log.action_type == 'UPDATED' %}
+                                <span class="badge badge-info">Updated</span>
+                            {% elif log.action_type == 'RECEIVED' %}
+                                <span class="badge badge-available">Arrival Recv</span>
+                            {% else %}
+                                <span class="badge badge-danger">{{ log.action_type }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong>{{ log.goods_item.name }}</strong><br>
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">SKU: {{ log.goods_item.sku }}</span>
+                        </td>
+                        <td>{{ log.warehouse.name }}</td>
+                        <td><strong>{{ log.quantity }}</strong></td>
+                        <td style="font-size: 0.78rem; color: var(--text-muted);">{{ log.timestamp|date:"d M, H:i" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 24px; color: var(--text-muted);">
+                            No inventory activity logged yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Quick Actions & Categories -->
+    <div class="glass-card" style="margin-bottom: 0;">
+        <div class="card-header">
+            <h3>Quick Operations</h3>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px;">
+            <a href="{% url 'goods_add' %}" class="btn btn-secondary" style="justify-content: flex-start; padding: 12px 16px;">
+                <span style="font-size: 1.2rem;">📦</span>
+                <span>Add New Goods to Warehouse</span>
+            </a>
+            <a href="{% url 'shipment_dispatch' %}" class="btn btn-primary" style="justify-content: flex-start; padding: 12px 16px;">
+                <span style="font-size: 1.2rem;">🚚</span>
+                <span>Dispatch Shipment Consignment</span>
+            </a>
+            <a href="{% url 'tracking_search' %}" class="btn btn-secondary" style="justify-content: flex-start; padding: 12px 16px;">
+                <span style="font-size: 1.2rem;">🔍</span>
+                <span>Track By Consignment Number</span>
+            </a>
+        </div>
+
+        <h4 style="font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 12px;">Top Stored Categories</h4>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            {% for cat in category_counts %}
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">
+                <span>{{ cat.category }}</span>
+                <strong style="color: #60a5fa;">{{ cat.total_qty }} units</strong>
+            </div>
+            {% empty %}
+            <p style="color: var(--text-muted); font-size: 0.8rem;">No categories yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Logistics Management System{% endblock %}</title>
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-icon">📦</div>
+                <div class="brand-text">
+                    <h1>LogiTrack Pro</h1>
+                    <span>Enterprise Logistics</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section-title">Core Operations</div>
+                <a href="{% url 'dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                    <span class="icon">📊</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{% url 'goods_list' %}" class="nav-item {% if 'goods' in request.resolver_match.url_name %}active{% endif %}">
+                    <span class="icon">📦</span>
+                    <span>Manage Goods</span>
+                </a>
+                <a href="{% url 'shipment_list' %}" class="nav-item {% if request.resolver_match.url_name == 'shipment_list' %}active{% endif %}">
+                    <span class="icon">🚚</span>
+                    <span>Shipments & Transit</span>
+                </a>
+                <a href="{% url 'shipment_dispatch' %}" class="nav-item {% if request.resolver_match.url_name == 'shipment_dispatch' %}active{% endif %}">
+                    <span class="icon">🚀</span>
+                    <span>Dispatch Shipment</span>
+                </a>
+                <a href="{% url 'tracking_search' %}" class="nav-item {% if 'tracking' in request.resolver_match.url_name %}active{% endif %}">
+                    <span class="icon">📍</span>
+                    <span>Track Goods</span>
+                </a>
+
+                <div class="nav-section-title">Facilities & Fleet</div>
+                <a href="{% url 'warehouse_list' %}" class="nav-item {% if request.resolver_match.url_name == 'warehouse_list' %}active{% endif %}">
+                    <span class="icon">🏭</span>
+                    <span>Warehouses</span>
+                </a>
+                <a href="{% url 'vehicle_list' %}" class="nav-item {% if request.resolver_match.url_name == 'vehicle_list' %}active{% endif %}">
+                    <span class="icon">🚛</span>
+                    <span>Fleet & Drivers</span>
+                </a>
+                <a href="{% url 'reports' %}" class="nav-item {% if request.resolver_match.url_name == 'reports' %}active{% endif %}">
+                    <span class="icon">📈</span>
+                    <span>Reports & Analytics</span>
+                </a>
+
+                <div class="nav-section-title">Customer & Comms</div>
+                <a href="{% url 'provider_requests' %}" class="nav-item {% if 'request' in request.resolver_match.url_name %}active{% endif %}">
+                    <span class="icon">📥</span>
+                    <span>Client Bookings</span>
+                    {% if pending_requests_count > 0 %}
+                        <span class="badge badge-warning" style="margin-left:auto; font-size: 0.65rem; padding: 2px 6px;">{{ pending_requests_count }}</span>
+                    {% endif %}
+                </a>
+                <a href="{% url 'enquiry_list' %}" class="nav-item {% if 'enquiry' in request.resolver_match.url_name %}active{% endif %}">
+                    <span class="icon">💬</span>
+                    <span>Customer Enquiries</span>
+                    {% if pending_enquiries_count > 0 %}
+                        <span class="badge badge-warning" style="margin-left:auto; font-size: 0.65rem; padding: 2px 6px;">{{ pending_enquiries_count }}</span>
+                    {% endif %}
+                </a>
+                <a href="{% url 'notifications' %}" class="nav-item {% if request.resolver_match.url_name == 'notifications' %}active{% endif %}">
+                    <span class="icon">🔔</span>
+                    <span>Notifications</span>
+                    {% if unread_notifications_count > 0 %}
+                        <span class="badge badge-danger" style="margin-left:auto; font-size: 0.65rem; padding: 2px 6px;">{{ unread_notifications_count }}</span>
+                    {% endif %}
+                </a>
+                <a href="{% url 'public_tracking_search' %}" target="_blank" class="nav-item">
+                    <span class="icon">🌐</span>
+                    <span>Public Tracker ↗</span>
+                </a>
+                <a href="{% url 'provider_profile' %}" class="nav-item {% if request.resolver_match.url_name == 'provider_profile' %}active{% endif %}">
+                    <span class="icon">🏢</span>
+                    <span>Company Profile</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="avatar">{{ request.user.username|first|upper|default:"A" }}</div>
+                    <div class="user-meta">
+                        <div class="name">{{ request.user.username|default:"Admin" }}</div>
+                        <div class="role">{% if user_profile.role == 'PROVIDER' %}Logistics Provider{% else %}Operations Admin{% endif %}</div>
+                    </div>
+                </div>
+                <form action="{% url 'logout' %}" method="post" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-secondary btn-sm" title="Log Out">🚪</button>
+                </form>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-wrapper">
+            <!-- Topbar -->
+            <header class="topbar">
+                <div class="page-title">
+                    <h2>{% block page_heading %}Logistics Command Center{% endblock %}</h2>
+                    <p>{% block page_subheading %}Real-time supply chain & warehouse tracking{% endblock %}</p>
+                </div>
+                <div class="topbar-actions">
+                    <a href="{% url 'notifications' %}" class="btn btn-secondary btn-sm" title="System Notifications" style="position: relative;">
+                        🔔
+                        {% if unread_notifications_count > 0 %}
+                            <span style="position: absolute; top: -5px; right: -5px; background: #ef4444; color: #fff; font-size: 0.65rem; font-weight: 700; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid var(--bg-topbar);">
+                                {{ unread_notifications_count }}
+                            </span>
+                        {% endif %}
+                    </a>
+                    <a href="{% url 'public_tracking_search' %}" target="_blank" class="btn btn-secondary btn-sm" title="Open Public Customer Portal">
+                        🌐 Public Portal
+                    </a>
+                    <a href="{% url 'shipment_dispatch' %}" class="btn btn-primary btn-sm">
+                        <span>+ Dispatch Consignment</span>
+                    </a>
+                    <a href="{% url 'goods_add' %}" class="btn btn-secondary btn-sm">
+                        <span>+ Stock Goods</span>
+                    </a>
+                </div>
+            </header>
+
+            <!-- Alerts & Messages -->
+            <div class="content-body">
+                {% if messages %}
+                <div class="alert-container">
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags|default:'info' }}">
+                        <span>{{ message }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <script src="{% static 'js/main.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
