@@ -34,18 +34,18 @@ graph TD
     CONS_REG --> CONS_DASH["Client Hub (/consumer/)"]
     CONS_LOGIN --> CONS_DASH
 
-    subgraph Relational Database (Shared & Synchronized)
-        USERS[("auth_user & UserProfile<br/>(Roles: PROVIDER / CONSUMER, GSTIN, Address)")]
-        WAREHOUSES[("Warehouse Table<br/>(provider_id FK, Code, City, Capacity)")]
-        FLEET[("Vehicle Table<br/>(provider_id FK, Number, Type, Capacity)")]
-        GOODS[("GoodsItem Table<br/>(provider_id FK, SKU, Category, Warehouse)")]
-        REQUESTS[("ShipmentRequest Table<br/>(consumer_id FK, preferred_provider_id FK)")]
-        SHIPMENTS[("Shipment Table<br/>(provider_id FK, consumer_id FK, Waybill)")]
-        NOTIFS[("Notification Table<br/>(Real-time cross-portal event feed)")]
+    subgraph DB ["Relational Database - Shared & Synchronized"]
+        USERS[("auth_user & UserProfile<br/>Roles: PROVIDER or CONSUMER, GSTIN, Address")]
+        WAREHOUSES[("Warehouse Table<br/>provider_id FK, Code, City, Capacity")]
+        FLEET[("Vehicle Table<br/>provider_id FK, Number, Type, Capacity")]
+        GOODS[("GoodsItem Table<br/>provider_id FK, SKU, Category, Warehouse")]
+        REQUESTS[("ShipmentRequest Table<br/>consumer_id FK, preferred_provider_id FK")]
+        SHIPMENTS[("Shipment Table<br/>provider_id FK, consumer_id FK, Waybill")]
+        NOTIFS[("Notification Table<br/>Real-time cross-portal event feed")]
     end
 
-    PROV_DASH <--> Relational Database
-    CONS_DASH <--> Relational Database
+    PROV_DASH <--> DB
+    CONS_DASH <--> DB
 ```
 
 ---
